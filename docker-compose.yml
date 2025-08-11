@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  mpiv-nginx:
+    build: .
+    ports:
+      - "8088:8088"
+    container_name: mpiv-welcome
+    restart: unless-stopped
