@@ -2,6 +2,51 @@
 
 This project provides a comprehensive setup for a multi-service Kubernetes environment on Minikube, complete with Istio for service mesh capabilities and Prometheus/Grafana for monitoring.
 
+## Windows quickstart (PowerShell)
+
+From a PowerShell terminal opened in the repo folder:
+
+1. One-time prerequisites
+   - Ensure Docker Desktop is running
+   - Ensure Minikube and kubectl are installed
+   - Ensure the Istio folder exists (e.g. `istio-1.22.3/`) in the repo
+   - Optional (if scripts blocked):
+     ```powershell
+     Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+     ```
+
+2. Start cluster, install Istio, deploy apps and addons
+   ```powershell
+   .\scripts\setup.ps1
+   ```
+
+3. Start local port-forwards (run in a separate terminal)
+   ```powershell
+   .\scripts\port-forward.ps1
+   ```
+   - App:        http://localhost:8080/
+   - JSON test:  http://localhost:8080/get
+   - Grafana:    http://localhost:3000 (admin/admin)
+   - Prometheus: http://localhost:9090
+
+4. Tear down (optional)
+   ```powershell
+   # stop port-forwards and remove app resources
+   .\scripts\teardown.ps1
+
+   # or delete the whole Minikube cluster
+   .\scripts\teardown.ps1 -All
+   ```
+
+Notes
+- If you use a different Istio version, update the version folder inside the scripts.
+- If NodePort is preferred instead of port-forward:
+  ```powershell
+  $ip = minikube ip
+  $port = kubectl -n istio-system get svc istio-ingressgateway -o jsonpath="{.spec.ports[?(@.name=='http2')].nodePort}"
+  Start-Process "http://$ip`:$port/"
+  ```
+
 ## Prerequisites
 
 - **Docker Desktop:** Ensure Docker Desktop is installed and running.
