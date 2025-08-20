@@ -1,0 +1,26 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin-virtualservice
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - httpbin-gateway
+  http:
+  - match:
+    - uri:
+        exact: /
+    route:
+    - destination:
+        host: mpiv-frontend
+        port:
+          number: 80
+  - match:
+    - uri:
+        prefix: /get
+    route:
+    - destination:
+        host: productpage
+        port:
+          number: 80
