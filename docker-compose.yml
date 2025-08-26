@@ -1,9 +1,154 @@
-version: '3.8'
-
 services:
-  mpiv-nginx:
-    build: .
+  # Frontend Service
+  mpiv-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mpiv-frontend
+    networks:
+      - mpiv-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`) && Path(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  # Product Service (httpbin for testing)
+  productpage:
+    image: kennethreitz/httpbin
+    container_name: productpage
+    networks:
+      - mpiv-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.productpage.rule=Host(`localhost`) && PathPrefix(`/get`)"
+      - "traefik.http.routers.productpage.entrypoints=web"
+      - "traefik.http.services.productpage.loadbalancer.server.port=80"
+
+  # Reviews Service
+  reviews:
+    image: kennethreitz/httpbin
+    container_name: reviews
+    networks:
+      - mpiv-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reviews.rule=Host(`localhost`) && PathPrefix(`/reviews`)"
+      - "traefik.http.routers.reviews.entrypoints=web"
+      - "traefik.http.services.reviews.loadbalancer.server.port=80"
+
+  # Details Service
+  details:
+    image: kennethreitz/httpbin
+    container_name: details
+    networks:
+      - mpiv-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.details.rule=Host(`localhost`) && PathPrefix(`/details`)"
+      - "traefik.http.routers.details.entrypoints=web"
+      - "traefik.http.services.details.loadbalancer.server.port=80"
+
+  # Traefik (Service Mesh/API Gateway)
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.traefik.address=:8080"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--accesslog=true"
     ports:
-      - "8088:8088"
-    container_name: mpiv-welcome
-    restart: unless-stopped
+      - "8080:80"        # Main application traffic
+      - "8090:8080"      # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - mpiv-network
+    labels:
+      - "traefik.enable=true"
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - mpiv-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`localhost`) && PathPrefix(`/prometheus`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - mpiv-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`localhost`) && PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  # Node Exporter (for system metrics)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - mpiv-network
+
+  # cAdvisor (for container metrics)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8088:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - mpiv-network
+
+networks:
+  mpiv-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
