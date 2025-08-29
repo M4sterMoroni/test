@@ -9,7 +9,7 @@ Write-Host "Starting MPIV Docker Compose environment..." -ForegroundColor Green
 
 # Stop any existing containers
 Write-Host "Stopping existing containers..." -ForegroundColor Yellow
-docker-compose down -v 2>$null
+docker-compose down -v
 
 # Build and start services
 Write-Host "Building and starting services..." -ForegroundColor Yellow

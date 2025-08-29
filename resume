@@ -1,0 +1,659 @@
+Introduction
+Purpose
+The primary purpose of this User Guide is to provide Prisma Cloud users with
+comprehensive, step-by-step instructions and essential information required to
+successfully utilize the Self-Service Upgrade Tool as part of their upgrade to Cortex
+Cloud.
+Specifically, this guide aims to:
+● Outline Prerequisites: Detail necessary permissions, access credentials (for
+both Prisma Cloud and Cortex Cloud), network requirements, and any
+preparation needed.
+● Guide Installation/Access: Provide instructions on how to install and access
+the tool.
+● Configure Upgrade Workflows: Clearly outline how to configure the tool,
+including connecting to source (Prisma Cloud) and destination (Cortex Cloud)
+environments, and selecting upgrade options or scope.
+● Instruct on Execution: Offer step-by-step guidance on initiating, monitoring,
+and managing the upgrade process via the tool interface.
+● Validate Outcomes: Explain how users can verify the successful completion
+and accuracy of the upgrade.
+● Aid Troubleshooting: Provide information on common issues, error messages,
+log interpretation, and basic troubleshooting steps users can take.
+● Define Scope and Limitations: Clarify exactly what data, configurations, or
+settings the tool is designed to migrate and any known limitations.
+Ultimately, this guide serves to empower users to effectively operate the tool
+independently, ensuring an accurate upgrade from Prisma Cloud to Cortex Cloud.
+Executive Summary
+The Self-Service Upgrade Tool provides an automated, user-driven solution to
+streamline the upgrade from Prisma Cloud to Cortex Cloud. This tool empowers
+security and IT teams to efficiently migrate relevant configurations and settings,
+minimizing manual effort and accelerating the adoption of Cortex Cloud.
+
+Self-Service Upgrade Tool | User Guide 4
+
+Key Benefits
+● Accelerated upgrade: Significantly reduces the time required for upgrade
+compared to manual processes, enabling faster onboarding onto Cortex
+Cloud.
+● Reduced Cost and Effort: Automates repetitive tasks, freeing up valuable
+technical resources and minimizing potential consulting costs associated with
+manual upgrade projects.
+● Minimized Risk and Increased Accuracy: Reduces the likelihood of human
+error during configuration transfer, ensuring critical settings and
+configurations are migrated correctly, thereby maintaining security visibility
+continuity.
+Relationship to Cortex Upgrade Helper
+It is important to distinguish this Self-Service Upgrade Tool from the Upgrade Helper
+functionality built into the Cortex Cloud platform. While the native Upgrade Helper
+typically facilitates internal platform upgrades, component upgrades within the
+Cortex ecosystem, or specific user onboarding workflows, this dedicated tool
+addresses the distinct scenario of upgrading relevant settings and configurations
+from Prisma Cloud, specifically into Cortex Cloud. Therefore, this tool serves as a
+complementary capability, purpose-built to handle the unique requirements of
+upgrading from Prisma Cloud, rather than replacing the functions provided by the
+standard Cortex Upgrade Helper for platform management.
+
+Self-Service Upgrade Tool | User Guide 5
+
+Prerequisites
+Before utilizing the Self-Service Upgrade Tool, ensuring all prerequisites are met is
+crucial for an accurate upgrade process. This preparation spans the source (Prisma
+Cloud), the destination (Cortex Cloud), and the features being migrated.
+Prisma Cloud Environment
+● Active Subscription: A valid Prisma Cloud Enterprise subscription is required.
+● API Access: You must generate a Prisma Cloud Access Key, consisting of an
+Access Key ID and a Secret Key. The recommendation is to create a service
+account for the process.
+● Permissions: The Access Key must be associated with the System Admin
+Prisma Cloud role that has sufficient permissions to access the specific
+settings, configurations, or other data points targeted for upgrade.
+● Connectivity: Network access must be available from the environment where
+the upgrade tool operates to the relevant Prisma Cloud API endpoint and the
+Prisma Cloud Compute Console URL.
+Cortex Cloud Environment
+● Active Tenant: A valid and provisioned Cortex Cloud tenant is necessary with
+the Application Security features.
+● API Access Credentials: You need appropriate Cortex Cloud API access
+credentials. Depending on the specific Cortex service being targeted by the
+upgrade tool, this may involve generating a specific type of API Key, Key ID, or
+service account token through the Cortex Cloud platform interface.
+● Permissions: The created Cortex Cloud credentials must be with the role
+Instance Administrator that has sufficient permissions to access the specific
+settings, configurations, or other data points targeted for upgrade. Refer to the
+User Roles and Groups for details.
+● API Endpoint: The correct API endpoint URL for your specific Cortex Cloud
+tenant.
+● Connectivity: Network access must be permitted from the upgrade tool's
+environment to the designated Cortex Cloud API endpoints.
+Resource Pre-onboarding, Preparation and Considerations
+● Define upgrade Scope: Clearly identify and document the specific application
+security configurations within Prisma Cloud that are intended for upgrade.
+
+Self-Service Upgrade Tool | User Guide 6
+
+● Verify Source Data: Confirm that the resources identified in the scope are
+present, accurate, and properly configured within Prisma Cloud before
+initiating the upgrade.
+● VCS Integrations: Ensure that you have already onboarded your VCS into
+Cortex Cloud, and that repositories are already configured and showing active
+on the tool. This is a crucial step to ensure the correct functionality of the tool.
+Considerations
+Cloud Workload Protection
+● Collections:
+○ Only collections assigned to supported policies will be copied as asset
+groups into Cortex Cloud. Collections that are not currently in use are
+outside the scope of this execution.
+○ For each policy type in Prisma Cloud where a collection is assigned, a
+corresponding asset group will be generated in Cortex. Therefore, if a
+single collection is assigned to three distinct policies, three asset groups
+will be created in Cortex.
+○ If a wildcard is included in the collection, the asset group's query will
+execute a "contains" operation.
+○ The application of conditions to each asset group is determined by the
+policy it's used within. It's important to note that even when asset
+groups are created from the same collection, their parameters might
+reference distinct resources.
+○ Apps IDs will not be supported
+● Vulnerability Policies:
+○ In the base execution of the feature, one policy will be copied as 2 in
+Cortex, one for alert behaviour and the second one for block behaviour.
+○ Blocking policies defined in Policies are going to be copied only in alert
+behavior into Cortex.
+○ To ensure policies are copied into Cortex, the asset groups must be an
+exact match. If an asset group is absent according to the Prisma
+original definition, the policy will not be generated. It is recommended
+to use the Collections feature beforehand to create asset groups and
+confirm their existence before reviewing the current feature.
+○ If this feature is selected along with the Collections feature. The
+collections module will complete its whole flow before the
+transformation of these policies start.
+
+● Compliance Policies:
+
+Self-Service Upgrade Tool | User Guide 7
+
+○ Cortex currently does not support compliance checks for
+images\containers.
+○ Each Prisma compliance rule supported by the tool that contains one of
+the malware rules will be copied to a new Cortex Malware policy.
+○ To ensure policies are copied into Cortex, the asset groups must be an
+exact match. If an asset group is absent according to the Prisma
+original definition, the policy will not be generated. It is recommended
+to use the Collections feature beforehand to create asset groups and
+confirm their existence before reviewing the current feature.
+○ If this feature is selected along with the Collections feature. The
+collections module will complete its whole flow before the
+transformation of these policies start.
+
+● Registry Scan Inventory:
+○ This feature is not supported in Cortex. Its purpose in the tool is to
+generate an output file containing existing Prisma configurations for
+mapping purposes.
+○ The result file can be found in the directory specified in the “Outputs”
+section of this document.
+
+Application Security
+● Validate Secrets and Secrets History
+○ Validate Secrets will configure the scan configuration of each one of the
+onboarded repos on Cortex Cloud. This update will be performed on all
+the repositories onboarded, overriding any manual configuration
+established before executing the tool.
+○ For improved behaviour, execute this feature after a successful
+migration of the repositories.
+
+● Enforcement Rules
+○ Only default Enforcement rules configurations are part of the scope of
+the feature. Exceptions will not be migrated to Cortex Cloud, but post
+execution modification can be performed on the tenant to adjust the
+exceptions.
+○ Migrated enforcement rules will be created only if a policy with the
+same name doesn't already exist in Cortex Cloud. Currently, the APIs do
+not support updating or deleting policies. Therefore, if a policy with the
+specified name already exists, the creation request will be skipped.
+○ Hardfail enforcement rules will be migrated with alert behaviour mode
+to avoid operational disrupts.
+
+Self-Service Upgrade Tool | User Guide 8
+
+○ Developer Suppressions will be automatically configured on the
+generated policies, based on the current status of this feature in Prisma
+Cloud.
+● Repository Selection
+○ Only the integrations marked with the “Manual Selection” feature on
+Prisma Cloud are going to be considered as part of the scope.
+○ The destination integrations must be onboarded manually before
+executing the tool. If there is no corresponding integration on Cortex
+Cloud, once the tool is executed no upgrade will be performed to the
+integration even if it was within the scope of the feature
+○ Integrations part of the scope will override any previous configuration
+existing on Cortex Cloud to assume the same settings as Prisma Cloud.
+All updated integrations will have Manual Selection and the same set of
+repositories as defined on Prisma Cloud.
+○ For GitHub and Bitbucket integration previously, Prisma Cloud
+permitted only one integration. Cortex Cloud enhances this by allowing
+multiple integrations simultaneously. Because of this change, ensure all
+target repositories are correctly selected. The system will select
+specified repositories if their names or unique identifiers are found
+within Cortex Cloud integration and if the integration itself can be
+matched with the ones in Prisma Cloud, otherwise, they will be omitted
+from the upgrade.
+○ If there's more than one integration with the same identifier in Cortex
+Cloud that matches an integration within the scope of the tool, the tool
+will update each one of them. However, only the last one updated will
+remain with the repositories onboarded.
+
+● OOTB Policies Labels
+○ Note that labels on out-of-the-box (OOTB) policies are overwritten
+during the upgrade process. If an OOTB policy has previously defined
+custom labels, the upgrade tool will overwrite them.
+○ Only Build policies are part of the scope of this upgrade.
+Meeting these prerequisites and considerations beforehand will significantly
+streamline the upgrade process facilitated by the Self-Service Upgrade Tool into your
+Cortex Cloud environment.
+Setup
+This section outlines the essential preparatory steps before you begin configuring
+the Self-Service Upgrade Tool. Proper setup is vital for the tool to operate correctly
+and perform the upgrade successfully.
+
+Self-Service Upgrade Tool | User Guide 9
+
+It is critical, before launching the tool or proceeding to the next step, to ensure you
+have thoroughly reviewed and fulfilled all requirements detailed in the 'Prerequisites'
+section of this guide. This verification step confirms you have:
+● Active subscriptions for both platforms.
+● Necessary network connectivity.
+● Obtained the specific API Credentials (Access Keys, API Keys, Secret Keys, IDs,
+FQDNs/URLs) and possess the required user permissions within both your
+Prisma Cloud and Cortex Cloud environments.
+● Properly installed the Self-Service Upgrade Tool executable and dependencies,
+depending on the OS (Windows or macOS).
+Completing these prerequisites beforehand is mandatory for the tool to authenticate
+and execute the upgrade tasks.
+Installation
+To obtain the Self-Service Upgrade Tool, navigate to the designated download
+location at LIVEcommunity.
+The download consists of a single ZIP file. This archive contains the necessary
+executable, providing a version compatible with all supported Operating Systems
+(e.g., Windows, macOS). Once downloaded, you will need to extract the contents of
+this ZIP file to a local directory on your system before running the appropriate
+executable for your OS.
+Running the Installation Scripts
+Inside the ZIP file you downloaded, you will find the main executable, tailored for the
+specific Operating System you have selected:
+● Windows: self-upgrade-tool.exe
+● macOS: self-upgrade-tool.app (There are two for macOs depending on the
+architecture)
+Note: Ensure that you have enough permissions to run the application.
+This executable will launch the Self-Service Upgrade Tool. Follow any on-screen
+prompts or refer to the tool's interface to proceed with the upgrade process.
+Settings
+Once you launch the Self-Service Upgrade Tool, the initial screen presented by the
+wizard is the Settings tab. In this tab provide the fundamental connection details
+
+Self-Service Upgrade Tool | User Guide 10
+
+that allow the tool to communicate securely with both your source (Prisma Cloud)
+and destination (Cortex Cloud) platforms. These details should correspond to the
+information gathered while fulfilling the prerequisites.
+
+Prisma Cloud
+In the Prisma Cloud Settings section of the Settings screen of the upgrade tool, you
+must also provide the connection details for your Prisma Cloud environment. Tooltips
+
+Self-Service Upgrade Tool | User Guide 11
+
+are available for each field within the tool interface, or by hovering over the
+information icon to provide specific guidance on obtaining or formatting the
+required values.
+Follow these instructions to retrieve the required Prisma Cloud information:
+1. Prisma Cloud Access Key ID and Secret Key
+○ Description: These credentials authenticate the upgrade tool's API
+access to your Prisma Cloud account. They are generated together as a
+pair.
+○ Generation Process:
+i. Log in to your Prisma Cloud platform.
+ii. Navigate to: Settings > Access Control > Access Keys.
+iii. Click Add > Access Key.
+iv. Follow the prompts to configure the key name and assign an
+appropriate role with sufficient permissions (refer to the
+Prerequisites section for details).
+v. Critical: Upon successful creation, Prisma Cloud will display the
+Access Key ID and the Secret Key only once. You must copy
+both values immediately and store them securely, especially
+the Secret Key which cannot be viewed again.
+vi. Paste the copied Access Key ID into the Access Key field and
+the copied Secret Key into the Secret Key field in the upgrade
+tool.
+2. Prisma Cloud API URL
+○ Description: The base URL for the Prisma Cloud API endpoint specific
+to your tenant's deployment region or instance.
+○ Generation Process: You must identify the correct API endpoint URL
+for your specific Prisma Cloud instance. Consult the official Prisma
+Cloud API documentation to determine the accurate URL designated
+for API access.
+○ Paste the correct API URL into the API URL field in the upgrade tool.
+○ Note: If you encounter an authentication error in the Prisma tool when
+your API URL is https://app.prismacloud.io, make sure to use
+https://app0.prismacloud.io to resolve the issue.
+
+Self-Service Upgrade Tool | User Guide 12
+
+3. Compute Console URL
+○ Description: This URL will be used to gather the information and
+configurations from the Cloud Workload Protection module in Prisma
+Cloud.
+i. Log in to your Prisma Cloud platform.
+ii. Select the Run Time Module.
+iii. Navigate to Manage > System > Utilities > Path to Console
+iv. Copy the value available in this section.
+v. Past the value in the “Compute Console URL” field in the upgrade
+tool.
+
+Verify the accuracy of all entered credentials before proceeding.
+
+Cortex Cloud
+Within the upgrade tool's Cortex Cloud Settings screen, you must provide the
+necessary credentials to establish a connection with your Cortex Cloud environment.
+Tooltips are available for each field within the tool interface, or by hovering over the ?
+icon to provide specific guidance on obtaining or formatting the required values.
+Follow these steps to retrieve the necessary information from Cortex Cloud:
+1. Cortex Cloud API URL/FQDN:
+○ Description: This is the specific API endpoint URL required for
+programmatic communication with your Cortex Cloud instance.
+
+Self-Service Upgrade Tool | User Guide 13
+
+○ Generation Process: This URL or FQDN (Fully Qualified Domain Name)
+is typically provided by Cortex Cloud during or after the API Key
+generation process (see step 2 below), often within the key details or
+API usage examples. Copy the exact URL/FQDN provided by Cortex
+Cloud, ensuring it matches the format specified in the tool's tooltip
+(e.g., https://api-<your_unique_fqdn>.paloaltonetworks.com). Paste
+this value into the corresponding field in the upgrade tool.
+
+2. Cortex Cloud API Key:
+○ Description: This credential authenticates the upgrade tool's API
+requests to Cortex Cloud.
+○ Generation Process:
+i. Navigate within Cortex Cloud to: Settings > Configurations >
+Integrations > API Keys.
+ii. Select + New Key.
+iii. Configure the key settings as required, ensuring it is assigned a
+role with sufficient permissions (refer to the Prerequisites section
+for details).
+iv. Critical: The generated API Key value is displayed only once
+immediately after creation. Copy this key value immediately
+and store it securely. It cannot be retrieved later.
+v. Paste the copied API Key into the designated field in the upgrade
+tool.
+3. Cortex Cloud Key ID
+○ Description: This value uniquely identifies the specific API Key being
+used.
+○ Generation Process: After generating the key, return to the list view at
+Settings > Configurations > Integrations > API Keys in Cortex Cloud.
+Locate the newly created key and copy its corresponding ID (usually
+displayed as a numerical value in the table). Paste this ID into the 'Key
+ID' field in the upgrade tool.
+
+Verify the accuracy of all entered credentials before proceeding.
+
+Self-Service Upgrade Tool | User Guide 14
+
+After setting up the tool, click on the Next button on the bottom right corner of the
+wizard and the credentials will be tested and validated.
+
+If both connections are successful you will see the green checkmark on the bottom
+of each of the sections showing that the connections are established and ready to
+run the upgrade.
+If any of the entered values are not valid or improperly entered, the tool will prompt
+with an error pointing to the settings that failed.
+Running Upgrade
+Content Selection
+Upon successfully completing the configuration in the Settings tab and clicking
+Next, you will proceed to the Content Selection section. This critical step allows you
+to precisely choose which Prisma Cloud configuration elements you wish to copy
+into your Cortex Cloud environment.
+
+Self-Service Upgrade Tool | User Guide 15
+
+For each available feature listed below, you can access helpful details via a tooltip.
+Simply hover your mouse cursor over the information icon beside it. The tooltip will
+explain the scope of that specific feature (detailing what settings are included) and
+the expected outcome (how it will appear or function within Cortex Cloud after
+upgrade).
+Review the information in the tooltips carefully to understand the impact of
+migrating each item. Once you have decided, select the checkbox next to each
+feature you want to include in this upgrade process:
+
+Runtime Security
+● Collections: Copy Prisma Cloud collections to Cortex Cloud as asset groups.
+This feature is limited to collections currently assigned to compliance or
+vulnerability policies in Prisma. An asset group will be generated for each
+policy it is applied to.
+● Vulnerability Policies: Copy Prisma Cloud vulnerability policies to Cortex
+Cloud as Vulnerability Management Policies. This process will create two
+policies: one for alert behavior and another for blocking behavior if the
+corresponding thresholds were configured in Prisma Cloud. The original
+priority order of the policies will be preserved in Cortex after the transfer.
+Note: If existing policies were present in Cortex prior to this operation, the
+copied policies will be appended in the same order after the last existing
+policy. CVE exclusions are supported by default.
+● Compliance Policies: Copy Prisma Cloud compliance policies to Cortex Cloud
+as Cloud Workload Policies. This action generates two policies: one for alert
+behavior and one for block behavior. If any selected Prisma rules in the original
+policy were classified as a malware rule, a corresponding malware policy will
+also be created based on the same principle.
+● Registry Scan Inventory: Generates an output file containing key
+configurations and elements from the Registry Scan Settings in JSON format.
+This item is saved to the same directory as other execution outputs.
+Application Security
+● Custom YAML Policies: Copy custom policy definitions written in YAML, these
+policies include the ones created via Visual editor and Code editor.
+● Repository Selection: If an integration uses manual repository selection in
+Prisma Cloud, the process ensures the same repositories are selected for the
+corresponding integration in Cortex Cloud.
+
+Self-Service Upgrade Tool | User Guide 16
+
+● Enforcement Rules: Copy the actual enforcement rules on Prisma Cloud and
+create the policies on Cortex Cloud.
+Note: All the Hard-Fail definitions on Prisma Cloud will be copied into
+Cortex Cloud in alerting mode to avoid any disruptions on the
+environments.
+● OOTB Build Policies Labels: Copy the labels applied to out-of-the-box build
+policies into Cortex Cloud.
+● Validate Secrets: If the feature is enabled in Prisma Cloud this will copy the
+settings into Cortex Cloud.
+● Secrets History: If the feature is enabled in Prisma Cloud this will copy the
+settings into Cortex Cloud.
+Ensure your selections accurately reflect the configurations and data you need in
+Cortex Cloud before proceeding to the next step.
+
+Self-Service Upgrade Tool | User Guide 17
+
+Advanced View
+Based on the selections made in the previous step, this view will show additional
+adjustments to certain functionalities, allowing for the scope and behavior of these
+features to be adjusted during the current execution. If none of the selected options
+
+Self-Service Upgrade Tool | User Guide 18
+
+have associated advanced options, the tool will display a message indicating this
+situation and you can proceed to the next step.
+Cloud Workload Protection
+● Compliance Policies
+○ Generate One Policy By Severity: Independent policies will be generated
+grouping rules by severity. This allows issues to be generated with their
+original assigned severity while the "Assume Severity of the Rule"
+capability is enabled in Cortex. This feature can create up to four new
+policies from a single existing one.
+
+● Vulnerability Policies
+○ Include Tags in Vulnerabilities: Adjust the scope of the rules or include
+additional resources to consider the exclusions defined in Prisma Tags.
+Cortex Cloud lacks a direct equivalent for tags; therefore, the tool will
+generate multiple asset groups and supplementary rules to replicate
+these exclusions. Warning: activating this feature might substantially
+increase the number of policies and asset groups generated.
+
+Application Security
+● Custom YAML Policies
+○ Migrate all Policies: Set the scope of the feature to all the identified
+policies.
+○ Choose labels from list: Choose the labels you wish to copy into Cortex.
+Only policies in Prisma that are tagged with the selected label will be
+included in the execution.
+○ Choose names from list: Choose the name of the policies you wish to
+copy into Cortex.
+○ Upgrade Only Enable Policies: Selecting this option will copy only the
+active custom policies from Prisma Cloud to Cortex Cloud.
+
+● Enforcement Rules
+○ Group Policies: Selection this option will group the policies that have
+the same actions, conditions and triggers in a single policy. The policy's
+name will reflect the elements that were combined into a single policy.
+○ Configure issues in created Policies: Enabling this option will configure
+the policy to create issues based on the established conditions.
+
+● OOTB Build Policies Labels
+○ Migrate all Policies: Set the scope of the feature to all the identified
+policies.
+
+Self-Service Upgrade Tool | User Guide 19
+
+○ Choose labels from list: Choose the labels you wish to copy into Cortex.
+Only policies in Prisma that are tagged with the selected label will be
+included in the execution.
+○ Choose names from list: Choose the name of the policies you wish to
+copy into Cortex.
+○ Upgrade Only Enable Policies: Selecting this option will copy only the
+active OOTB policies from Prisma Cloud to Cortex Cloud.
+
+Self-Service Upgrade Tool | User Guide 20
+
+Review
+After finalizing your choices in the Content Selection section, click Next to proceed
+to the Review tab. This screen provides a summary list of the features you've selected
+to copy from Prisma Cloud into Cortex Cloud. Consider this your final confirmation
+step before initiating the actual upgrade process.
+
+Self-Service Upgrade Tool | User Guide 21
+
+Carefully review the summarized selections to ensure they are exactly what you
+intend to upgrade.
+Important: Once the upgrade process begins, it is strongly advised not to
+interrupt it. Doing so can lead to incomplete transfers or discrepancies in your
+Cortex Cloud environment. Verify everything is correct before starting the
+upgrade.
+
+Self-Service Upgrade Tool | User Guide 22
+
+Once the upgrade begins, the Review screen dynamically updates to show the
+real-time progress for each feature you selected. You can observe the status of
+individual items as they move through the upgrade workflow.
+
+Self-Service Upgrade Tool | User Guide 23
+
+Please be aware that during the execution process, labels may be updated, included,
+or removed from the view. This is expected behavior. If you observe a discrepancy
+between the number of resources processed during the transformation and the final
+execution results, it is likely due to restrictions, considerations, or the scope of the
+tool, which may prevent all processed elements from being pushed into Cortex.
+If the tool appears frozen for an extended period (e.g., 2+ hours) without progress and
+the logs are not showing any recent update, or if it closes before completing its tasks,
+please document the issue and reach out via a TAC case for assistance.
+
+Upgrade Stages and Status Monitoring
+The tool processes each feature through several key stages, generally involving:
+Ingestion (reading from Prisma Cloud), Transformation (adapting data for Cortex
+
+Self-Service Upgrade Tool | User Guide 24
+
+Cloud), and Push (writing data to Cortex Cloud). The status displayed next to each
+feature indicates its current progress:
+● Not copied yet: The upgrade for this feature is queued and has not yet
+started.
+● Fetching Data: Actively retrieving the required information from Prisma
+Cloud.
+● Transformation Complete: Data has been successfully fetched and prepared
+in the format needed for Cortex Cloud.
+● Pushing data: Currently transferring the prepared data into your Cortex Cloud
+environment. This contains a progress bar to show what's the percentage of
+progress the logs will contain the detail of the results of each information sent
+into Cortex Cloud.
+● Complete: The feature was successfully migrated and written to Cortex Cloud.
+● Error: An issue occurred while processing this feature. Check logs or tool
+messages for more details.
+
+Important: Be aware that, by design, any policies or rules from Prisma Cloud
+configured to perform prevention or blocking actions (e.g., Enforcement Rules
+set to 'Block' or 'Hard Fail') will be migrated to Cortex Cloud in an “Alert-only”
+mode or “Disabled”. This ensures that automated blocking does not immediately
+take effect in your new environment, allowing you time for review and deliberate
+activation within Cortex Cloud post-upgrade. As shown in the example below, an
+Enforcement Rule set to 'Hard Fail' will be copied in alert behavior.
+
+Once the upgrade process for all selected features is complete, the Review tab will
+display the final Upgrade Summary. This summary provides a high-level overview of
+the entire operation's outcome, typically indicating the overall status (e.g.,
+'Completed Successfully', 'Completed with Errors', or ‘Error’) and often includes
+counts of features successfully copied versus those that encountered errors. It's
+recommended to review this summary and consult the detailed logs (if errors
+occurred) before proceeding to verify the results directly within your Cortex Cloud
+
+Self-Service Upgrade Tool | User Guide 25
+
+environment. Review the Logs section of this User Guide on how to analyze the
+same.
+
+Note that multiple executions of the tool are going to update the elements created
+previously as long as their name or identity remains the same.
+
+Self-Service Upgrade Tool | User Guide 26
+
+Troubleshooting
+This section assists in diagnosing and resolving issues encountered while using the
+Self-Service Upgrade Tool, which utilizes the Cortex Cloud APIs and the Prisma Cloud
+APIs. Common challenges during upgrade can arise when making API calls,
+interpreting server responses (including specific HTTP status codes and error
+messages returned by the server), handling data transformations prior to sending,
+and ensuring successful data ingestion into Cortex Cloud. Below, we outline frequent
+error messages and scenarios related to these areas, offering guidance and potential
+solutions. For complete endpoint specifications, request/response formats, and
+authoritative error code details, always refer to the official Cortex Cloud API
+documentation linked above.
+Main Considerations During Troubleshooting
+● Authentication and Authorization: Verify that the API credentials (e.g., API
+keys, tokens) are valid, correctly formatted in the request headers or
+parameters, and have the necessary permissions for the intended operation.
+Look for 401 Unauthorized or 403 Forbidden status codes.
+● Request Payload and Formatting: Ensure that the request body is correctly
+formatted (e.g., valid JSON), includes all mandatory fields, and adheres to the
+data types and structures defined in the API specification. 400 Bad Request
+errors frequently point to payload issues.
+● Server Responses and Error Codes: Don't just look at the success/failure of
+the call; examine the HTTP status code and the response body. The body often
+contains specific error codes or messages from Cortex Cloud detailing the
+exact problem (e.g., invalid field value, resource conflict 409 Conflict,
+server-side issues 5xx Server Error).
+● Data Transformation Logic: If your process involves transforming data before
+sending it to the API, meticulously review this logic. Ensure the output
+precisely matches the schema expected by the Cortex Cloud API endpoint.
+Subtle errors here can lead to 400 Bad Requests or unexpected behavior
+during data ingestion.
+● Data Ingestion Confirmation: Even if an API call returns a success status (e.g.,
+200 OK, 202 Accepted, 204 No Content), verify that the data has been
+correctly ingested and processed within Cortex Cloud as expected. Check
+relevant logs or the Cortex Cloud interface.
+● Rate Limiting: Be mindful of API rate limits. Exceeding allowed request quotas
+can result in 429 Too Many Requests errors.
+
+Self-Service Upgrade Tool | User Guide 27
+
+● Network Connectivity: Rule out basic network connectivity issues between
+the client making the call and the Palo Alto Networks Cortex Cloud API
+endpoints and Prisma Cloud APIs.
+● Data already exists: There are some situations where features selected are
+already present in the Cortex Cloud Console, the reason why the Upgrade tool
+is not going to be able to do the copy process, and it will log them with the
+corresponding case (e.g., Skipping creation - policy already exists with that
+name).
+Logs
+The Self-Service Upgrade Tool generates a dedicated log file named
+self-upgrade-tool.log during execution. This essential log, found within the primary
+logs folder “<log directory tied to the user>/self-upgrade-tool/”, contains a detailed
+record of all steps and actions performed during the upgrade process. Consult this
+log file to track the execution sequence, or to assist in diagnosing any errors or
+unexpected behavior encountered, for example:
+● On Windows: “C:\Users\<User Home Directory>\AppData\Local\Logs”
+● On Mac: “/Users/<User Home Directory>/Library/Logs/self-upgrade-tool”
+When analyzing this log file, pay attention to the structure of the entries. Information
+is often categorized by the specific tool component or process stage, and the feature
+or data type being handled. For example, to find information related to the
+transformation of Custom YAML Policies, look for log lines containing identifiers
+similar to [Pusher][custom_yaml_policies][pusher]. This structured logging helps
+you quickly isolate messages relevant to a specific area or problem.
+
+Self-Service Upgrade Tool | User Guide 28
+
+Outputs
+Upon execution, the Self-Service Upgrade Tool produces several outputs designed to
+clarify the data migration process into Cortex Cloud, including details on ingestion
+and transformation. These output files are consolidated within a designated folder
+created at “<directory tied to the user>/self-upgrade-tool/”. For example:
+● On Windows: “C:\Users\<User Home
+Directory>\AppData\Local\self-upgrade-tool”
+● On Mac: “/Users/<User Home Directory>/Library/Application
+Support/self-upgrade-tool”
+This folder is structured with two subdirectories: cortex, containing information
+pertinent to the Cortex Cloud environment, and prisma, with data related to the
+source Prisma Cloud environment.
+
+The structure within both the prisma and cortex output folders is organized by the
+main Prisma categories that can be migrated. Initially, reflecting current tool
+capabilities, only the application subfolder will be present in each directory. JSON
+files located under prisma/application hold the original data ingested from Prisma,
+while the corresponding files under cortex/application contain the data once
+transformed for Cortex Cloud compatibility.
+
+Self-Service Upgrade Tool | User Guide 29
