@@ -1,0 +1,17 @@
+# Copy this file to terraform.tfvars and update with your values
+# terraform.tfvars is ignored by git for security
+
+# Prisma Cloud Compute Configuration
+console_url = "https://localhost:8083"
+username    = "admin"
+password    = "admin234"
+
+# User passwords (change these!)
+admin_password   = "AdminPass123!"
+analyst_password = "AnalystPass123!"
+viewer_password  = "ViewerPass123!"
+custom_password  = "CustomPass123!"
+
+# Environment configuration
+environment  = "dev"
+project_name = "prisma-users"
