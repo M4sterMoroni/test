@@ -5,7 +5,6 @@ This guide provides a comprehensive overview of Prisma Cloud Runtime policies fo
 
 **Scope:** Runtime Protection, Host Security, Container Security, Serverless Security  
 **Tools:** Prisma Cloud Compute Edition (PCCE), Defender Agents, Runtime Monitoring  
-**Last Updated:** January 2025  
 
 ## Key Runtime Protection Capabilities
 
