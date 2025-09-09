@@ -337,8 +337,3 @@ By leveraging Prisma Cloud's runtime protection capabilities, organizations can 
 - **Defender Deployment**: https://docs.prismacloud.io/compute/defender-deployment
 
 ---
-
-**Document Version**: 1.0  
-**Last Updated**: January 2025  
-**Author**: AI Assistant  
-**Review Status**: Complete
