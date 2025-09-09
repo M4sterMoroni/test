@@ -12,9 +12,7 @@ This project contains various tools and configurations for managing Prisma Cloud
 │   ├── terraform.tfvars      # Configuration values
 │   ├── terraform.tfvars.example # Example configuration
 │   ├── .gitignore           # Git ignore rules
-│   ├── README-Terraform.md  # Terraform documentation
-│   ├── deploy-users.ps1     # PowerShell deployment script
-│   └── test-deployment.ps1  # PowerShell test script
+│   └── README-Terraform.md  # Terraform documentation
 ├── terraform-setup.ps1       # Helper script to run Terraform from root
 ├── API/                      # PowerShell API scripts
 │   ├── create-collections.ps1
@@ -29,7 +27,10 @@ This project contains various tools and configurations for managing Prisma Cloud
 ├── monitoring/               # Monitoring configurations
 │   ├── grafana/              # Grafana dashboards and datasources
 │   └── prometheus.yml        # Prometheus configuration
-├── scripts/                  # General PowerShell scripts
+├── scripts/                  # PowerShell scripts
+│   ├── deploy-users.ps1     # User deployment script
+│   ├── test-deployment.ps1  # Deployment test script
+│   ├── create-compliance-standard.ps1 # Compliance standard script
 │   ├── docker-setup.ps1
 │   ├── docker-teardown.ps1
 │   ├── port-forward.ps1
@@ -88,7 +89,23 @@ From the project root directory:
    .\test-deployment.ps1
    ```
 
-For detailed Terraform documentation, see [terraform/README-Terraform.md](terraform/README-Terraform.md).
+### Custom Compliance Standard
+
+Create a custom compliance standard with controls, requirements, and policy mappings using PowerShell:
+
+```powershell
+# Navigate to scripts directory
+cd scripts
+
+# Create compliance standard using PowerShell
+.\create-compliance-standard.ps1
+
+# Dry run to see what would be created
+.\create-compliance-standard.ps1 -DryRun
+```
+
+For detailed documentation, see:
+- [Terraform User Management](terraform/README-Terraform.md)
 
 ### API Management
 

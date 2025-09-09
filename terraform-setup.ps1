@@ -56,20 +56,20 @@ Set-Location "terraform"
 
 # Execute the appropriate command
 if ($Init) {
-    Write-Host "Running: .\deploy-users.ps1 -Init" -ForegroundColor Cyan
-    .\deploy-users.ps1 -Init
+    Write-Host "Running: .\scripts\deploy-users.ps1 -Init" -ForegroundColor Cyan
+    .\scripts\deploy-users.ps1 -Init
 } elseif ($Plan) {
-    Write-Host "Running: .\deploy-users.ps1 -Plan" -ForegroundColor Cyan
-    .\deploy-users.ps1 -Plan
+    Write-Host "Running: .\scripts\deploy-users.ps1 -Plan" -ForegroundColor Cyan
+    .\scripts\deploy-users.ps1 -Plan
 } elseif ($Apply) {
-    Write-Host "Running: .\deploy-users.ps1 -Apply" -ForegroundColor Cyan
-    .\deploy-users.ps1 -Apply
+    Write-Host "Running: .\scripts\deploy-users.ps1 -Apply" -ForegroundColor Cyan
+    .\scripts\deploy-users.ps1 -Apply
 } elseif ($Test) {
-    Write-Host "Running: .\test-deployment.ps1" -ForegroundColor Cyan
-    .\test-deployment.ps1
+    Write-Host "Running: .\scripts\test-deployment.ps1" -ForegroundColor Cyan
+    .\scripts\test-deployment.ps1
 } elseif ($Destroy) {
-    Write-Host "Running: .\deploy-users.ps1 -Destroy" -ForegroundColor Cyan
-    .\deploy-users.ps1 -Destroy
+    Write-Host "Running: .\scripts\deploy-users.ps1 -Destroy" -ForegroundColor Cyan
+    .\scripts\deploy-users.ps1 -Destroy
 } else {
     Write-Host "No action specified. Use -Help to see available options." -ForegroundColor Yellow
     Write-Host ""
@@ -78,6 +78,8 @@ if ($Init) {
 
 # Return to original directory
 Set-Location ".."
+
+
 
 
 

@@ -88,11 +88,11 @@ terraform destroy
 
 ### Using the PowerShell scripts
 
-The terraform directory includes convenient PowerShell scripts:
+The scripts directory includes convenient PowerShell scripts:
 
 ```powershell
-# Navigate to terraform directory
-cd terraform
+# Navigate to scripts directory
+cd scripts
 
 # Initialize Terraform
 .\deploy-users.ps1 -Init

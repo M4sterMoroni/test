@@ -38,13 +38,16 @@ try {
     exit 1
 }
 
-# Check if we're in the terraform directory
-if (-not (Test-Path "main.tf")) {
-    Write-Host "Error: This script must be run from the terraform directory" -ForegroundColor Red
-    Write-Host "Please navigate to the terraform folder and run the script from there" -ForegroundColor Yellow
-    Write-Host "Example: cd terraform && .\deploy-users.ps1 -Init" -ForegroundColor Cyan
+# Check if we're in the scripts directory and terraform directory exists
+if (-not (Test-Path "../terraform/main.tf")) {
+    Write-Host "Error: This script must be run from the scripts directory" -ForegroundColor Red
+    Write-Host "Please navigate to the scripts folder and run the script from there" -ForegroundColor Yellow
+    Write-Host "Example: cd scripts && .\deploy-users.ps1 -Init" -ForegroundColor Cyan
     exit 1
 }
+
+# Change to terraform directory for terraform commands
+Set-Location "../terraform"
 
 # Check if terraform.tfvars exists
 if (-not (Test-Path "terraform.tfvars")) {
