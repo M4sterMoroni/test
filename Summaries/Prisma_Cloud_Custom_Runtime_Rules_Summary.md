@@ -1,26 +1,23 @@
 # Prisma Cloud Custom Runtime Rules - Engineer's Guide
 
 ## Overview
-This guide provides comprehensive information about creating custom Runtime Rules in Prisma Cloud Enterprise Edition, including syntax for Processes, File System, and Networking rules, and practical examples for rule creation.
+This guide provides comprehensive information about custom Runtime Rules in Prisma Cloud Enterprise Edition based on the official documentation.
 
-**Scope:** Custom Runtime Rules, Process Monitoring, File System Monitoring, Network Monitoring  
-**Tools:** Prisma Cloud Enterprise Edition, Runtime Security Policies  
-**Documentation Source:** [Prisma Cloud Enterprise Edition](https://docs.prismacloud.io/en/enterprise-edition)  
-**Last Updated:** January 2025  
+**Documentation Source:** [Prisma Cloud Enterprise Edition - Custom Runtime Rules](https://docs.prismacloud.io/en/enterprise-edition/content-collections/runtime-security/runtime-defense/custom-runtime-rules)  
+**Last Updated:** June 11, 2025  
 
 ## Custom Runtime Rules Overview
 
-### **1. What are Custom Runtime Rules?**
+Prisma Cloud models runtime behavior with machine learning to scale runtime defense in big and fluid environments. When machine learning doesn't fully capture the range of acceptable runtime behaviors, custom rules provide a way to declaratively augment models with exceptions and additions.
 
-Custom Runtime Rules in Prisma Cloud Enterprise Edition allow you to define specific security policies that monitor and control:
+### **What Custom Runtime Rules Do**
+- **Machine Learning Integration**: Work alongside ML models to provide precise control
+- **Discrete Behavior Detection**: Detect specific runtime behaviors with expressions
+- **Event Processing**: Examine process, file system, and network events programmatically
+- **Action Execution**: Take specific actions when expressions evaluate to true
+- **Multi-Platform Support**: Apply to both hosts and containers
 
-- **Process Execution**: Monitor which processes can run on your systems
-- **File System Access**: Control file and directory access permissions
-- **Network Communications**: Monitor and control network traffic
-
-### **2. Rule Types and Categories**
-
-Based on the [Prisma Cloud Enterprise Edition documentation](https://docs.prismacloud.io/en/enterprise-edition), custom runtime rules fall into three main categories:
+### **Rule Types Available**
 
 #### **Process Rules**
 - Monitor process execution and termination
@@ -32,394 +29,159 @@ Based on the [Prisma Cloud Enterprise Edition documentation](https://docs.prisma
 - Control read/write permissions
 - Detect unauthorized file modifications
 
-#### **Network Rules**
-- Monitor network communications
-- Control inbound and outbound connections
+#### **Networking Rules (Outgoing)**
+- Monitor outbound network connections
+- Control network communications
 - Detect suspicious network activities
 
-## Rule Syntax and Configuration
+## Expression Grammar
 
-### **1. Process Rules Syntax**
+Custom rules use expressions to examine various facets of runtime events. The expression grammar supports:
 
-#### **Basic Process Rule Structure**
-```yaml
-process:
-  - name: "rule_name"
-    description: "Rule description"
-    process: "process_name_or_pattern"
-    action: "allow|deny|alert"
-    conditions:
-      - user: "username_or_pattern"
-      - group: "group_name_or_pattern"
-      - working_dir: "directory_path"
+### **Basic Syntax**
+```
+expression: term (op term | in )*
+term: integer | string | keyword | event | '(' expression ')' | unaryOp
+op: and | or | > | < | >= | <= | = | !=
+in: '(' integer | string (',' integer | string)*)?
+unaryOp: not
+keyword: startswith | contains
+string: strings must be enclosed in double quotes
+integer: int
+event: process, file system, or network
 ```
 
-#### **Process Rule Examples**
-```yaml
-# Allow specific process
-process:
-  - name: "allow_nginx"
-    description: "Allow nginx process"
-    process: "nginx"
-    action: "allow"
+### **Expression Examples**
+```
+# Network connection to specific IPs
+net.outgoing_ip = "169.254.169.254" or net.outgoing_ip = "169.254.170.2"
 
-# Deny specific process
-process:
-  - name: "deny_malicious"
-    description: "Deny malicious process"
-    process: "malware.exe"
-    action: "deny"
+# Process with specific parent and different name
+proc.pname in ("mysql", "sqlplus", "postgres") and proc.pname != proc.name
 
-# Alert on suspicious process
-process:
-  - name: "alert_suspicious"
-    description: "Alert on suspicious process"
-    process: "*.exe"
-    action: "alert"
-    conditions:
-      - working_dir: "/tmp"
+# File path starting with specific directory
+file.path startswith "/etc"
 ```
 
-### **2. File System Rules Syntax**
+## Event Attributes
 
-#### **Basic File System Rule Structure**
-```yaml
-filesystem:
-  - name: "rule_name"
-    description: "Rule description"
-    path: "file_or_directory_path"
-    operation: "read|write|execute|delete"
-    action: "allow|deny|alert"
-    conditions:
-      - process: "process_name"
-      - user: "username"
-      - group: "group_name"
+### **Process Events**
+Process events fire when new processes are forked. Available attributes:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `proc.name` | string | Process name |
+| `proc.pname` | string | Parent process name |
+| `proc.path` | string | Full path to the program |
+| `proc.user` | string | User to whom the process belongs |
+| `proc.interactive` | bool | Interactive process (Not supported in App-Embedded runtime) |
+| `proc.cmdline` | string | Command line |
+| `proc.service` | string | Only for host rules |
+
+### **File System Events**
+File system events fire on write operations to disk. Available attributes:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `file.path` | string | Path of the file being written |
+| `file.dir` | string | Directory of the file being written |
+| `file.type` | enum | File type (elf, secret, regular, folder) |
+| `file.md5` | string | MD5 hash of the file (ELF files only) |
+
+### **Networking Events**
+Network events fire when processes establish outbound connections. Available attributes:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `proc.name` | string | Name of process initiating connection |
+| `net.outgoing_port` | string | Outbound port |
+| `net.outgoing_ip` | string | Outgoing IP address |
+| `net.private_subnet` | bool | Private subnet |
+
+## Rule Library and Management
+
+### **Rule Library**
+- **Central Storage**: Custom rules are stored in a central library for reuse
+- **Intelligence Stream**: Prisma Cloud Labs distributes rules via Intelligence Stream
+- **Default State**: Rules are shipped in disabled state by default
+- **Management**: Review and apply rules at any time
+
+### **Access Method**
+Navigate to: **Defend > Custom Rules > Runtime**
+- Select **Add rule** to create new custom rules
+- Filter rules by Type (processes, filesystem, network-outgoing)
+- Filter by Owner (system) to see Prisma Cloud Labs rules
+
+## Activating Custom Rules
+
+### **Runtime Policy Integration**
+Custom rules are integrated into runtime policies at:
+**Defend > Runtime > {Container policy | Host policy | Serverless policy | App-Embedded Policy}**
+
+### **Rule Processing Order**
+1. **Custom rules are processed first** and take precedence over other settings
+2. **Host Runtime Defense** has specific evaluation order:
+   - **Process events**: Activities > Host activity monitoring → process types custom rules → Anti-malware settings
+   - **Filesystem events**: Filesystem types custom rules → Anti-malware settings
+   - **Networking events**: Network-outgoing type custom rules take precedence over Outbound internet ports and Outbound IPs settings
+
+### **Available Actions**
+- **allow**: Permit the action
+- **alert**: Generate an alert
+- **prevent**: Block the action
+- **block**: Block the action (not supported in App-Embedded)
+
+### **Logging Options**
+- **Audit**: Log as audit event
+- **Incident**: Log as incident
+
+## Configuration Steps
+
+### **Adding Custom Rules to Runtime Policy**
+1. Open Console and go to **Defend > Runtime > {Container policy | Host policy | Serverless policy | App-Embedded policy}**
+2. Select **Add rule**
+3. Enter a **Rule name**
+4. Select the **Scope** of the rule on a set of collections
+5. Select **Custom Rules**
+6. Under **Select rules**, select the rules to add and select **Apply**
+7. Specify an **Effect** for each rule
+8. Specify how to **log the event** for each rule
+9. Select **Save**
+
+## Limitations
+
+### **Prevent Mode Limitations**
+- `proc.cmdline` and `file.type` fields are not supported in prevent mode
+- Error occurs if trying to attach custom rules with these fields and action set to Prevent
+
+### **Process Prevention Logic**
+- Prisma Cloud cannot inspect command line arguments before a process starts
+- If a process is explicitly denied with Prevent effect, it will never run
+- Cannot allow processes prevented by other policies using `proc.cmdline` analysis
+
+### **App-Embedded Limitations**
+- Supports **Processes** and **Outbound Connection** rule types only
+- **Block action** is not supported
+- **Prevent** is supported for both Processes and Outbound Connection rule types
+- **Prevent effect** isn't supported when using `file.type` or `file.md5` properties
+
+## Practical Example: Allow Process to Write to Specific File Path
+
+### **Scenario**
+Allow user Jake to run binary `netcat` with parameter `-l` and log an alert.
+
+### **Expression**
+```
+proc.user = "Jake" and proc.name = "netcat" and proc.cmdline contains "-l"
 ```
 
-#### **File System Rule Examples**
-```yaml
-# Allow specific file access
-filesystem:
-  - name: "allow_config_read"
-    description: "Allow reading config files"
-    path: "/etc/config/*"
-    operation: "read"
-    action: "allow"
-
-# Deny specific file modification
-filesystem:
-  - name: "deny_system_modification"
-    description: "Deny system file modification"
-    path: "/etc/passwd"
-    operation: "write"
-    action: "deny"
-
-# Alert on suspicious file access
-filesystem:
-  - name: "alert_suspicious_access"
-    description: "Alert on suspicious file access"
-    path: "/home/*/.ssh/*"
-    operation: "read"
-    action: "alert"
-```
-
-### **3. Network Rules Syntax**
-
-#### **Basic Network Rule Structure**
-```yaml
-network:
-  - name: "rule_name"
-    description: "Rule description"
-    protocol: "tcp|udp|icmp"
-    port: "port_number_or_range"
-    direction: "inbound|outbound|both"
-    action: "allow|deny|alert"
-    conditions:
-      - process: "process_name"
-      - remote_ip: "ip_address_or_range"
-```
-
-#### **Network Rule Examples**
-```yaml
-# Allow specific network connection
-network:
-  - name: "allow_http"
-    description: "Allow HTTP connections"
-    protocol: "tcp"
-    port: "80"
-    direction: "both"
-    action: "allow"
-
-# Deny specific network connection
-network:
-  - name: "deny_suspicious_port"
-    description: "Deny suspicious port"
-    protocol: "tcp"
-    port: "4444"
-    direction: "both"
-    action: "deny"
-
-# Alert on suspicious network activity
-network:
-  - name: "alert_suspicious_connection"
-    description: "Alert on suspicious connection"
-    protocol: "tcp"
-    port: "1-1023"
-    direction: "outbound"
-    action: "alert"
-```
-
-## Wildcards and Pattern Matching
-
-### **1. Supported Wildcards**
-
-#### **Asterisk (*) Wildcard**
-- Matches any number of characters
-- Example: `*.exe` matches any file ending with `.exe`
-
-#### **Question Mark (?) Wildcard**
-- Matches exactly one character
-- Example: `file?.txt` matches `file1.txt`, `file2.txt`, etc.
-
-#### **Bracket Notation**
-- Matches any character within brackets
-- Example: `file[123].txt` matches `file1.txt`, `file2.txt`, `file3.txt`
-
-### **2. Path Patterns**
-
-#### **Directory Patterns**
-```yaml
-# Match all files in a directory
-path: "/var/log/*"
-
-# Match all files in subdirectories
-path: "/var/log/**/*"
-
-# Match specific file types
-path: "*.log"
-```
-
-#### **Process Patterns**
-```yaml
-# Match any process
-process: "*"
-
-# Match processes with specific pattern
-process: "nginx*"
-
-# Match processes in specific directory
-process: "/usr/bin/*"
-```
-
-## Practical Example: Allow Specific Process to Write to Specific File Path
-
-### **1. Scenario**
-Allow the `backup_script.sh` process to write to the `/backup/` directory while denying other processes from writing to this directory.
-
-### **2. Rule Configuration**
-
-#### **Step 1: Create File System Rule for Backup Directory**
-```yaml
-filesystem:
-  - name: "allow_backup_script_write"
-    description: "Allow backup script to write to backup directory"
-    path: "/backup/*"
-    operation: "write"
-    action: "allow"
-    conditions:
-      - process: "backup_script.sh"
-
-  - name: "deny_other_backup_write"
-    description: "Deny other processes from writing to backup directory"
-    path: "/backup/*"
-    operation: "write"
-    action: "deny"
-    conditions:
-      - process: "!backup_script.sh"
-```
-
-#### **Step 2: Create Process Rule for Backup Script**
-```yaml
-process:
-  - name: "allow_backup_script"
-    description: "Allow backup script execution"
-    process: "backup_script.sh"
-    action: "allow"
-    conditions:
-      - working_dir: "/scripts"
-```
-
-#### **Step 3: Create Network Rule for Backup Process**
-```yaml
-network:
-  - name: "allow_backup_network"
-    description: "Allow backup script network access"
-    protocol: "tcp"
-    port: "22,80,443"
-    direction: "outbound"
-    action: "allow"
-    conditions:
-      - process: "backup_script.sh"
-```
-
-### **3. Complete Rule Set**
-```yaml
-# Custom Runtime Rules for Backup Process
-rules:
-  # File System Rules
-  filesystem:
-    - name: "allow_backup_script_write"
-      description: "Allow backup script to write to backup directory"
-      path: "/backup/*"
-      operation: "write"
-      action: "allow"
-      conditions:
-        - process: "backup_script.sh"
-
-    - name: "deny_other_backup_write"
-      description: "Deny other processes from writing to backup directory"
-      path: "/backup/*"
-      operation: "write"
-      action: "deny"
-      conditions:
-        - process: "!backup_script.sh"
-
-  # Process Rules
-  process:
-    - name: "allow_backup_script"
-      description: "Allow backup script execution"
-      process: "backup_script.sh"
-      action: "allow"
-      conditions:
-        - working_dir: "/scripts"
-
-  # Network Rules
-  network:
-    - name: "allow_backup_network"
-      description: "Allow backup script network access"
-      protocol: "tcp"
-      port: "22,80,443"
-      direction: "outbound"
-      action: "allow"
-      conditions:
-        - process: "backup_script.sh"
-```
-
-## Rule Management and Best Practices
-
-### **1. Rule Creation Process**
-
-#### **Step 1: Define Requirements**
-- Identify what needs to be monitored or controlled
-- Determine the scope and conditions
-- Choose appropriate actions (allow, deny, alert)
-
-#### **Step 2: Create Rules**
-- Use the Prisma Cloud console or API
-- Test rules in a controlled environment
-- Validate rule syntax and logic
-
-#### **Step 3: Deploy and Monitor**
-- Deploy rules to target environments
-- Monitor rule effectiveness
-- Adjust rules based on feedback
-
-### **2. Best Practices**
-
-#### **Rule Design**
-- **Clear Naming**: Use descriptive names for rules
-- **Specific Conditions**: Be as specific as possible with conditions
-- **Appropriate Actions**: Choose the right action for each rule
-- **Regular Review**: Periodically review and update rules
-
-#### **Testing and Validation**
-- **Test in Staging**: Test rules in staging environments first
-- **Monitor Performance**: Monitor rule performance and impact
-- **Validate Logic**: Ensure rules work as expected
-
-#### **Documentation**
-- **Document Purpose**: Clearly document the purpose of each rule
-- **Maintain Records**: Keep records of rule changes and updates
-- **Version Control**: Use version control for rule configurations
-
-## Integration with Prisma Cloud Enterprise Edition
-
-### **1. Console Integration**
-
-#### **Runtime Security Section**
-- Access through Prisma Cloud console under 'Runtime Security'
-- Create, modify, and manage custom runtime rules
-- Monitor rule performance and violations
-- Generate reports on security events
-
-#### **Content Collections**
-- **Runtime Security**: Available in Prisma Cloud Enterprise Edition under Content Collections > Runtime Security
-- **Application Security**: Available under Content Collections > Application Security
-- **Unified Interface**: Single holistic collection for comprehensive security management
-
-### **2. API Integration**
-
-#### **REST API**
-- Create and manage rules programmatically
-- Integrate with existing automation tools
-- Automate rule deployment and updates
-
-#### **Terraform Integration**
-- Use Terraform providers for rule management
-- Version control rule configurations
-- Automate rule deployment
-
-## Troubleshooting and Maintenance
-
-### **1. Common Issues**
-
-#### **Rule Not Working**
-- **Issue**: Rule not enforcing as expected
-- **Solution**: Check rule syntax and conditions
-- **Prevention**: Test rules thoroughly before deployment
-
-#### **False Positives**
-- **Issue**: Legitimate activities being blocked
-- **Solution**: Adjust rule conditions and scope
-- **Prevention**: Regular rule review and adjustment
-
-#### **Performance Impact**
-- **Issue**: Rules causing performance degradation
-- **Solution**: Optimize rule conditions and scope
-- **Prevention**: Monitor rule performance regularly
-
-### **2. Maintenance Activities**
-
-#### **Regular Maintenance**
-- **Rule Reviews**: Periodically review rule effectiveness
-- **Performance Monitoring**: Monitor rule performance and impact
-- **Updates**: Update rules to address new threats and requirements
-
-#### **Documentation and Auditing**
-- **Configuration Records**: Maintain detailed rule configuration records
-- **Change Tracking**: Track all rule modifications and updates
-- **Compliance Support**: Support audit and compliance requirements
-
-## Conclusion
-
-Custom Runtime Rules in Prisma Cloud Enterprise Edition provide powerful capabilities for securing containerized environments. Based on the [official Prisma Cloud Enterprise Edition documentation](https://docs.prismacloud.io/en/enterprise-edition), these rules enable organizations to:
-
-### **Key Benefits:**
-- **Granular Control**: Fine-grained control over process, file, and network activities
-- **Flexible Configuration**: Support for wildcards, patterns, and complex conditions
-- **Comprehensive Monitoring**: Monitor all aspects of runtime security
-- **Automated Enforcement**: Automatically enforce security policies
-
-### **Best Practices:**
-- **Clear Rule Design**: Design clear and specific rules
-- **Thorough Testing**: Test rules in controlled environments
-- **Regular Review**: Periodically review and update rules
-- **Performance Monitoring**: Monitor rule performance and impact
-
-By leveraging Prisma Cloud's Custom Runtime Rules capabilities as documented in the [Enterprise Edition](https://docs.prismacloud.io/en/enterprise-edition), organizations can achieve effective runtime security that adapts to their specific requirements while maintaining protection against threats.
+### **Configuration**
+1. Create custom rule with the expression above
+2. Set action to **alert**
+3. Set logging to **incident** or **audit**
+4. Add to runtime policy with appropriate scope
 
 ## References and Resources
 
-- **Prisma Cloud Enterprise Edition Documentation**: https://docs.prismacloud.io/en/enterprise-edition
-- **Runtime Security (Content Collections)**: Available in Prisma Cloud Enterprise Edition under Content Collections > Runtime Security
-- **Application Security (Content Collections)**: Available in Prisma Cloud Enterprise Edition under Content Collections > Application Security
+- **Custom Runtime Rules Documentation**: https://docs.prismacloud.io/en/enterprise-edition/content-collections/runtime-security/runtime-defense/custom-runtime-rules
+- **Prisma Cloud Enterprise Edition**: https://docs.prismacloud.io/en/enterprise-edition
