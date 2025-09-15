@@ -45,10 +45,12 @@ graph TD
     A[TwistCLI Scan] --> B[Send Results to Prisma Cloud]
     B --> C[Prisma Cloud Evaluates Policies]
     C --> D{Policy Decision}
-    D -->|Pass| E[Allow Build]
-    D -->|Fail| F[Block Build]
-    E --> G[Continue CI/CD Pipeline]
-    F --> H[Fail CI/CD Pipeline]
+    D -->|Pass| E[Return PASS to TwistCLI]
+    D -->|Fail| F[Return FAIL to TwistCLI]
+    E --> G[TwistCLI Enforces: Allow Build]
+    F --> H[TwistCLI Enforces: Block Build]
+    G --> I[Continue CI/CD Pipeline]
+    H --> J[Fail CI/CD Pipeline]
 ```
 
 **Key Points:**
