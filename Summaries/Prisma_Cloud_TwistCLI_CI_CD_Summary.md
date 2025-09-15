@@ -36,6 +36,73 @@ TwistCLI is a command-line tool provided by Prisma Cloud that enables organizati
 - **Compliance Standards**: Ensures adherence to organizational and regulatory standards
 - **Automated Decision Making**: Automatically passes or fails builds based on policy compliance
 
+### **Policy Enforcement Architecture**
+
+TwistCLI does **not** make policy decisions independently. Instead, it acts as a client that communicates with Prisma Cloud to enforce policies:
+
+```mermaid
+graph TD
+    A[TwistCLI Scan] --> B[Send Results to Prisma Cloud]
+    B --> C[Prisma Cloud Evaluates Policies]
+    C --> D{Policy Decision}
+    D -->|Pass| E[Allow Build]
+    D -->|Fail| F[Block Build]
+    E --> G[Continue CI/CD Pipeline]
+    F --> H[Fail CI/CD Pipeline]
+```
+
+**Key Points:**
+- **Real-Time Communication**: TwistCLI always communicates with Prisma Cloud for policy decisions
+- **Centralized Policy Management**: All policies are managed in Prisma Cloud console
+- **No Offline Enforcement**: Policies are evaluated in real-time, not locally
+- **Consistent Enforcement**: Same policies apply across all TwistCLI instances
+- **Audit Trail**: All policy decisions are logged in Prisma Cloud
+
+### **Policy Enforcement Process**
+
+#### **Step-by-Step Flow:**
+1. **TwistCLI scans** the image locally
+2. **Sends results** to Prisma Cloud via API
+3. **Prisma Cloud evaluates** against configured policies
+4. **Returns policy decision** to TwistCLI
+5. **TwistCLI enforces** the decision locally
+
+#### **Example: Policy Enforcement in Action**
+```bash
+# TwistCLI command with policy enforcement
+twistcli images scan --address <PRISMA_CLOUD_URL> \
+                     --user <USERNAME> \
+                     --password <PASSWORD> \
+                     --policy-enforcement \
+                     --image myapp:latest
+
+# What happens behind the scenes:
+# 1. Scans image locally
+# 2. Sends results to Prisma Cloud API
+# 3. Prisma Cloud evaluates against policies
+# 4. Returns decision (PASS/FAIL)
+# 5. TwistCLI enforces decision locally
+```
+
+#### **Policy Decision Output:**
+```bash
+# When policies PASS
+Scanning image: myapp:latest
+Sending results to Prisma Cloud...
+Policy evaluation: PASSED
+Action: ALLOWING BUILD
+Build can proceed
+
+# When policies FAIL
+Scanning image: myapp:latest
+Sending results to Prisma Cloud...
+Policy evaluation: FAILED
+Reason: High severity vulnerability found
+Action: BLOCKING BUILD
+ERROR: Policy enforcement failed
+Build blocked due to policy violations
+```
+
 ## Using TwistCLI in CI/CD Pipelines
 
 ### **Download and Installation**
