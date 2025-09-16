@@ -1,0 +1,150 @@
+name: TwistCLI Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'terraform/**'
+      - 'Dockerfile*'
+      - 'docker-compose.yml'
+      - '.github/workflows/twistcli-scan.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'terraform/**'
+      - 'Dockerfile*'
+      - 'docker-compose.yml'
+      - '.github/workflows/twistcli-scan.yml'
+
+env:
+  PRISMA_CLOUD_URL: ${{ secrets.PRISMA_CLOUD_URL }}
+  PRISMA_CLOUD_USERNAME: ${{ secrets.PRISMA_CLOUD_USERNAME }}
+  PRISMA_CLOUD_PASSWORD: ${{ secrets.PRISMA_CLOUD_PASSWORD }}
+
+jobs:
+  security-scan:
+    name: TwistCLI Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Download TwistCLI
+      run: |
+        curl -k -o twistcli "${{ env.PRISMA_CLOUD_URL }}/api/v1/util/twistcli"
+        chmod +x twistcli
+        sudo mv twistcli /usr/local/bin/
+        
+    - name: Verify TwistCLI installation
+      run: |
+        twistcli --version
+        
+    - name: Scan Terraform files
+      run: |
+        echo "=== Scanning Terraform Files ==="
+        if [ -d "terraform" ]; then
+          twistcli iac scan \
+            --address ${{ env.PRISMA_CLOUD_URL }} \
+            --user ${{ env.PRISMA_CLOUD_USERNAME }} \
+            --password ${{ env.PRISMA_CLOUD_PASSWORD }} \
+            --template-type terraform \
+            --template-version 1.0 \
+            --policy-enforcement \
+            --output-file terraform-scan-results.json \
+            terraform/
+        else
+          echo "No terraform directory found, skipping..."
+        fi
+        
+    - name: Build Docker image
+      run: |
+        echo "=== Building Docker Image ==="
+        if [ -f "Dockerfile" ]; then
+          docker build -t test-app:latest .
+        else
+          echo "No Dockerfile found, skipping..."
+        fi
+        
+    - name: Scan Docker image
+      run: |
+        echo "=== Scanning Docker Image ==="
+        if docker images | grep -q "test-app"; then
+          twistcli images scan \
+            --address ${{ env.PRISMA_CLOUD_URL }} \
+            --user ${{ env.PRISMA_CLOUD_USERNAME }} \
+            --password ${{ env.PRISMA_CLOUD_PASSWORD }} \
+            --policy-enforcement \
+            --output-file docker-scan-results.json \
+            test-app:latest
+        else
+          echo "No Docker image found, skipping..."
+        fi
+        
+    - name: Install Docker Compose
+      run: |
+        echo "=== Installing Docker Compose ==="
+        curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+        
+    - name: Build Docker Compose services
+      run: |
+        echo "=== Building Docker Compose Services ==="
+        if [ -f "docker-compose.yml" ]; then
+          docker-compose build
+        else
+          echo "No docker-compose.yml found, skipping..."
+        fi
+        
+    - name: Scan Docker Compose services
+      run: |
+        echo "=== Scanning Docker Compose Services ==="
+        if [ -f "docker-compose.yml" ]; then
+          services=$(docker-compose config --services)
+          for service in $services; do
+            echo "Scanning service: $service"
+            image_name="test_${service}_latest"
+            twistcli images scan \
+              --address ${{ env.PRISMA_CLOUD_URL }} \
+              --user ${{ env.PRISMA_CLOUD_USERNAME }} \
+              --password ${{ env.PRISMA_CLOUD_PASSWORD }} \
+              --policy-enforcement \
+              --output-file "docker-compose-scan-${service}.json" \
+              "$image_name" || echo "Failed to scan $service"
+          done
+        else
+          echo "No docker-compose.yml found, skipping..."
+        fi
+        
+    - name: Display scan results
+      run: |
+        echo "=== Scan Results Summary ==="
+        if [ -f "terraform-scan-results.json" ]; then
+          echo "Terraform scan completed"
+          cat terraform-scan-results.json | jq '.' || echo "Could not parse JSON"
+        fi
+        
+        if [ -f "docker-scan-results.json" ]; then
+          echo "Docker scan completed"
+          cat docker-scan-results.json | jq '.' || echo "Could not parse JSON"
+        fi
+        
+        for file in docker-compose-scan-*.json; do
+          if [ -f "$file" ]; then
+            echo "Docker Compose scan completed for $file"
+            cat "$file" | jq '.' || echo "Could not parse JSON"
+          fi
+        done
+        
+    - name: Upload scan results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: |
+          terraform-scan-results.json
+          docker-scan-results.json
+          docker-compose-scan-*.json
