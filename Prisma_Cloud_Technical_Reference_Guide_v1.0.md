@@ -125,33 +125,96 @@
 
 ### Sub-sections Explained
 
-#### 1. Runtime Policies
+#### 1. Vulnerabilities
+**Purpose**: Identify and remediate security vulnerabilities across all resources
+- **Vulnerability Scanning**: Continuous scanning for known CVEs and security issues
+- **Risk Assessment**: Prioritize vulnerabilities based on severity and exploitability
+- **Remediation Guidance**: Provide step-by-step instructions to fix security issues
+- **Patch Management**: Track and manage security updates across environments
+
+#### 2. Compliance
+**Purpose**: Ensure adherence to security standards and regulatory requirements
+- **Policy Violation Tracking**: Monitor and report compliance violations
+- **Framework Support**: Built-in support for SOC 2, PCI DSS, HIPAA, CIS Benchmarks
+- **Compliance Scoring**: Calculate compliance percentages across environments
+- **Audit Reporting**: Generate compliance reports for auditors and stakeholders
+
+#### 3. Runtime
 **Purpose**: Real-time protection for running workloads
-- **Process Policies**: Control which processes can execute
+- **Process Policies**: Control which processes can execute in containers/hosts
 - **Network Policies**: Enforce network segmentation and communication rules
 - **File System Policies**: Monitor and protect file system access
 - **Anti-malware**: Detect and prevent malicious software execution
 
-#### 2. Vulnerability Management
-**Purpose**: Identify and remediate security vulnerabilities
-- **Vulnerability Scanning**: Continuous scanning for known vulnerabilities
-- **Patch Management**: Automated patch deployment and tracking
-- **Risk Assessment**: Prioritize vulnerabilities based on risk
-- **Remediation Guidance**: Provide steps to fix security issues
+#### 4. WAAS (Web Application and API Security)
+**Purpose**: Protect web applications and APIs from attacks
 
-#### 3. Threat Detection
-**Purpose**: Detect and respond to security threats
-- **Behavioral Analysis**: AI-powered anomaly detection
-- **Signature-based Detection**: Known threat pattern matching
-- **Heuristic Analysis**: Rule-based threat detection
-- **Incident Correlation**: Connect related security events
+**WAAS Policy Types**:
+- **Container WAAS**: Protection for containerized applications
+  - **In-Line Protection**: Real-time traffic inspection and blocking
+  - **Out-of-Band Protection**: Monitoring and alerting without blocking
+- **Host WAAS**: Application protection for host-based workloads
+- **App-Embedded WAAS**: Protection integrated directly into applications
+- **Serverless WAAS**: Protection for serverless functions and APIs
+- **Agentless WAAS**: Protection without requiring agents
+- **Network Lists**: Manage allowed/blocked network connections and IP addresses
+- **Sensitive Data**: Protect and monitor access to sensitive information
 
-#### 4. Firewall Management
-**Purpose**: Network security control and segmentation
+**WAAS Rule Management**:
+- **Rule Creation**: Create custom WAAS rules for specific protection needs
+- **Rule Import/Export**: Import existing rules or export for backup
+- **Rule Filtering**: Filter rules by keywords and attributes
+- **Rule Scoping**: Apply rules to specific collections or environments
+- **Rule Ordering**: Control the order in which rules are evaluated
+
+### WAAS Console Deep Dive
+
+**Based on Console Screenshots**:
+The WAAS section provides comprehensive web application and API security management:
+
+#### Container WAAS Policy View:
+- **Primary Tabs**: Container, Host, App-Embedded, Serverless, Agentless, Network lists, Sensitive data
+- **Container Focus**: Currently viewing container-specific WAAS policies
+- **Protection Modes**: In-Line (active blocking) vs Out-of-Band (monitoring only)
+- **Policy Description**: "WAAS rules are designed to let you tailor the best-suited protection for the containers in your environment"
+
+#### Rule Management Interface:
+- **Filter Bar**: "Filter app firewall rules by keywords and attributes"
+- **Action Buttons**: Export all, Import, + Add rule
+- **Rule Table Columns**:
+  - Rule name
+  - Description (optional)
+  - Scope
+  - Modified (sortable)
+  - Entities in scope (sortable)
+  - Actions
+  - Order
+
+#### Current State Analysis:
+- **Empty Rule Set**: "There is no data to show" - No WAAS rules currently configured
+- **Ready for Configuration**: Interface ready for rule creation and management
+- **Comprehensive Coverage**: Support for all deployment models (container, host, serverless, etc.)
+
+#### 5. CNNS (Cloud Native Network Security)
+**Purpose**: Network security for cloud-native environments
 - **Network Segmentation**: Isolate workloads and environments
 - **Traffic Filtering**: Control inbound and outbound traffic
 - **Port Management**: Monitor and control port usage
 - **Protocol Analysis**: Deep packet inspection and analysis
+
+#### 6. Access
+**Purpose**: Control and monitor access to resources
+- **Access Policies**: Define who can access what resources
+- **Authentication Monitoring**: Track login attempts and authentication events
+- **Authorization Controls**: Enforce role-based access controls
+- **Privileged Access Management**: Monitor and control elevated access
+
+#### 7. Custom Rules
+**Purpose**: Create organization-specific security rules
+- **Custom Policies**: Define custom security rules using RQL (Resource Query Language)
+- **Policy Testing**: Validate custom rules before deployment
+- **Rule Templates**: Create reusable policy templates
+- **Advanced Logic**: Complex rule conditions and responses
 
 ### Technical Implementation
 - **Defender Agents**: Deployed on protected resources
@@ -181,35 +244,67 @@
 
 ### Sub-sections Explained
 
-#### 1. Compliance Dashboards
-**Purpose**: Real-time compliance status monitoring
+#### 1. Events
+**Purpose**: Real-time security event monitoring and analysis
+- **Event Logs**: Comprehensive logging of all security-related activities
+- **Event Correlation**: Connect related security events across systems
+- **Real-time Alerts**: Immediate notification of security incidents
+- **Event Forensics**: Detailed analysis of security events and incidents
+
+#### 2. Runtime
+**Purpose**: Monitor runtime behavior and compliance
+- **Behavioral Monitoring**: Track application and system behavior patterns
+- **Runtime Compliance**: Ensure running workloads meet compliance requirements
+- **Performance Impact**: Monitor security controls' impact on performance
+- **Runtime Analytics**: Analyze runtime security metrics and trends
+
+#### 3. Vulnerabilities
+**Purpose**: Track and manage security vulnerabilities
+- **Vulnerability Discovery**: Identify security issues in deployed resources
+- **Risk Prioritization**: Rank vulnerabilities by severity and business impact
+- **Remediation Tracking**: Monitor progress in fixing security issues
+- **Vulnerability Trends**: Analyze vulnerability patterns over time
+
+#### 4. Compliance
+**Purpose**: Ensure adherence to security standards and regulatory requirements
+- **Compliance Dashboards**: Real-time compliance status across frameworks
 - **SOC 2 Type II**: Service organization control compliance
 - **PCI DSS**: Payment card industry data security standards
 - **HIPAA**: Healthcare information portability and accountability
 - **GDPR**: General data protection regulation compliance
 - **CIS Benchmarks**: Center for internet security benchmarks
 - **NIST Framework**: National institute of standards technology
+- **Policy Violation Tracking**: Monitor and report compliance violations
 
-#### 2. Policy Violations
-**Purpose**: Track and manage security policy violations
-- **Violation Detection**: Identify resources that violate policies
-- **Severity Classification**: Categorize violations by risk level
-- **Remediation Tracking**: Monitor progress in fixing violations
-- **Exception Management**: Handle legitimate business exceptions
+#### 5. WAAS (Web Application and API Security)
+**Purpose**: Monitor web application and API security posture
+- **Application Security Monitoring**: Track application-level security events
+- **API Security**: Monitor API usage and potential security issues
+- **Web Application Firewall**: Monitor WAF rules and blocked requests
+- **Application Performance**: Track security controls' impact on application performance
 
-#### 3. Risk Assessment
-**Purpose**: Evaluate and prioritize security risks
-- **Risk Scoring**: Calculate risk scores for resources and environments
-- **Threat Modeling**: Analyze potential attack vectors
-- **Vulnerability Impact**: Assess impact of security vulnerabilities
-- **Business Impact**: Evaluate business risk of security issues
+#### 6. ATT&CK (MITRE ATT&CK Framework)
+**Purpose**: Map security events to MITRE ATT&CK framework for threat intelligence
 
-#### 4. Audit and Reporting
-**Purpose**: Generate compliance and audit reports
-- **Compliance Reports**: Automated compliance status reports
-- **Audit Trails**: Detailed logs of security events and changes
-- **Executive Dashboards**: High-level security posture summaries
-- **Custom Reports**: Organization-specific reporting requirements
+**ATT&CK Explorer Features**:
+- **Interactive Matrix**: Visual grid showing ATT&CK tactics and techniques
+- **Event Correlation**: Correlates audits from cloud native apps to ATT&CK framework
+- **Tactic Overview**: Track events across all 11 ATT&CK tactics:
+  - Initial Access, Execution, Persistence, Privilege Escalation
+  - Defense Evasion, Credential Access, Discovery, Lateral Movement
+  - Collection, Command and Control, Exfiltration, Impact
+
+**Technique Analysis**:
+- **Event Counts**: Shows number of events detected for each technique
+- **Technique Details**: Specific attack techniques under each tactic
+- **Defense Evasion Focus**: Special attention to evasion techniques (e.g., "Obfuscated Files")
+- **Filtering**: Filter techniques by attributes and time ranges
+
+**Key Capabilities**:
+- **Threat Intelligence**: Understand attack patterns and techniques in use
+- **Defense Planning**: Identify gaps in security controls
+- **Incident Response**: Map security events to known attack frameworks
+- **Compliance**: Demonstrate security monitoring capabilities to auditors
 
 ### Technical Implementation
 - **Continuous Monitoring**: Real-time compliance assessment
@@ -222,6 +317,29 @@
 - **Automated Remediation**: Guidance for fixing compliance issues
 - **Historical Tracking**: Long-term compliance trend analysis
 - **Custom Policies**: Organization-specific compliance requirements
+
+### ATT&CK Explorer Deep Dive
+
+**Based on Console Screenshots**:
+The ATT&CK Explorer shows a comprehensive view of security events mapped to the MITRE ATT&CK framework:
+
+#### Current View Analysis:
+- **Filter Applied**: "Time: Last 7 days" - Shows events from the past week
+- **Total Events**: "3 total entries (filtered)" - Three security events detected
+- **Active Tactics**: Most tactics show "0 events" indicating clean security posture
+- **Defense Evasion**: Shows "3 Events" specifically under "Obfuscated Files" technique
+
+#### Key Insights:
+- **Obfuscated Files Detection**: The system detected 3 instances of obfuscated files
+- **Clean Environment**: No events detected in most attack categories
+- **Focused Monitoring**: Events are concentrated in defense evasion techniques
+- **Real-time Correlation**: Events are automatically mapped to ATT&CK framework
+
+#### Practical Applications:
+- **Threat Hunting**: Use ATT&CK mapping to identify attack patterns
+- **Incident Response**: Understand attack progression and techniques used
+- **Security Posture**: Assess coverage against known attack techniques
+- **Compliance Reporting**: Demonstrate comprehensive threat monitoring
 
 ---
 
