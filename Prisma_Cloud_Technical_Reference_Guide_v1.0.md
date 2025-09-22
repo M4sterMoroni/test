@@ -109,6 +109,30 @@
 - **Network Flows**: Communication patterns between resources
 - **Compliance Status**: Resource compliance with security policies
 
+### Important Limitations and Requirements
+
+#### Radars/Cloud Section Limitations
+**⚠️ Critical Limitation**: Radars/Cloud only works for assets where you can apply agents
+- **Agent Requirement**: Cloud resources must have Defender agents deployed to be monitored
+- **Limited Coverage**: Without agents, only basic infrastructure discovery is possible
+- **Real-time Monitoring**: Requires agent deployment for continuous monitoring
+- **Use Cases**: Best for VMs, containers, and workloads where agents can be installed
+
+#### Radars/Serverless Section Limitations
+**⚠️ Platform Restriction**: Radars/Serverless only supports AWS Lambda
+- **AWS Lambda Only**: Currently limited to AWS Lambda functions
+- **No Multi-Cloud**: Does not support Azure Functions or Google Cloud Functions
+- **Agentless Scanning**: Uses AWS APIs for serverless function discovery
+- **Defend/Vulnerabilities Alternative**: For multi-cloud serverless, use Defend/Vulnerabilities which works across all cloud providers
+
+#### Network Monitoring Settings Warning
+**⚠️ Critical System Impact**: Network monitoring can overwrite iptables
+- **iptables Overwrite**: Enabling network monitoring will modify system iptables rules
+- **Potential System Crash**: Can lead to system instability if not properly planned
+- **Planning Required**: Must coordinate with network administrators before enabling
+- **Backup Strategy**: Always backup iptables configuration before enabling network monitoring
+- **Testing**: Test in non-production environments first
+
 ---
 
 ## Defend Section - Active Protection
@@ -127,10 +151,68 @@
 
 #### 1. Vulnerabilities
 **Purpose**: Identify and remediate security vulnerabilities across all resources
+
+**Key Features**:
 - **Vulnerability Scanning**: Continuous scanning for known CVEs and security issues
 - **Risk Assessment**: Prioritize vulnerabilities based on severity and exploitability
 - **Remediation Guidance**: Provide step-by-step instructions to fix security issues
 - **Patch Management**: Track and manage security updates across environments
+
+**Risk Factors Analysis**:
+- **Severity Classification**: Critical, High, Medium, Low risk levels
+- **Exploitability Scoring**: CVSS (Common Vulnerability Scoring System) integration
+- **Business Impact**: Assessment of potential business disruption
+- **Remediation Priority**: AI-powered prioritization based on multiple risk factors
+- **False Positive Reduction**: Machine learning to reduce noise and focus on real threats
+
+**Exceptions and Tags**:
+- **Exception Management**: Create exceptions for false positives or accepted risks
+- **Tag-based Exclusions**: Use resource tags to exclude specific vulnerabilities
+- **Temporary Exceptions**: Time-limited exceptions for planned remediation
+- **Exception Documentation**: Detailed reasoning and approval workflow
+- **Tag Types**:
+  - **Environment Tags**: `env:production`, `env:development`
+  - **Application Tags**: `app:critical`, `app:legacy`
+  - **Owner Tags**: `owner:team-a`, `owner:security`
+  - **Custom Tags**: Organization-specific tagging schemes
+
+**Base Images Management**:
+- **Base Image Scanning**: Deep vulnerability analysis of container base images
+- **Layer-by-Layer Analysis**: Vulnerability tracking through image layers
+- **Base Image Recommendations**: Suggested secure alternatives
+- **Base Image Updates**: Track and manage base image security updates
+- **Custom Base Images**: Support for organization-specific base images
+
+**Registry Scanning Requirements**:
+**⚠️ Minimum Requirements for Registry Scanning** (based on [official documentation](https://docs.prismacloud.io/en/compute-edition/34/admin-guide/install/system-requirements#hardware)):
+
+**Hardware Requirements for Registry Scanning**:
+- **CPU**: 2 cores minimum for registry scanning functionality
+- **Memory**: 2 GB minimum for registry scanning (4 GB with WAAS OOB)
+- **Storage**: 20 GB minimum for registry scanning functionality
+- **Image Storage Formula**: 1.5 × (size of largest image) × (number of executors)
+- **Network**: Stable high-bandwidth connection to registries
+- **Disk I/O**: High-performance SSD for vulnerability scanning operations
+
+**System Requirements**:
+- **Operating System**: Linux (Ubuntu 18.04+, CentOS 7+, RHEL 7+)
+- **Container Runtime**: Docker 19.03+ or containerd 1.3+
+- **Kubernetes**: v1.19+ (if using Kubernetes deployment)
+- **Network Access**: HTTPS access to Prisma Cloud Console and container registries
+
+**Registry-Specific Requirements**:
+- **Authentication**: Registry credentials and permissions
+- **API Access**: Registry API endpoints accessible from Prisma Cloud
+- **Scan Frequency**: Balance between security coverage and resource usage
+- **Storage Growth**: Plan for vulnerability database growth over time
+
+**Performance Considerations**:
+- **Concurrent Scans**: Limit concurrent registry scans based on available resources
+- **Scan Scheduling**: Schedule scans during low-usage periods
+- **Resource Monitoring**: Monitor CPU, memory, and disk usage during scanning
+- **Network Bandwidth**: Ensure adequate bandwidth for image pulling and scanning
+
+**Note**: For detailed registry scanning documentation and specific requirements, consult with David or Gabriel Campos for the latest registry scanning images documentation.
 
 #### 2. Compliance
 **Purpose**: Ensure adherence to security standards and regulatory requirements
@@ -175,8 +257,32 @@ The WAAS section provides comprehensive web application and API security managem
 #### Container WAAS Policy View:
 - **Primary Tabs**: Container, Host, App-Embedded, Serverless, Agentless, Network lists, Sensitive data
 - **Container Focus**: Currently viewing container-specific WAAS policies
-- **Protection Modes**: In-Line (active blocking) vs Out-of-Band (monitoring only)
-- **Policy Description**: "WAAS rules are designed to let you tailor the best-suited protection for the containers in your environment"
+- **Protection Modes**: 
+  - **In-Line**: Active blocking with full protection rules (OWASP Top 10, attack signatures, etc.)
+  - **Out-of-Band**: Monitoring only - no protection rules available
+- **Policy Description**: 
+  - **In-Line**: "WAAS rules are designed to let you tailor the best-suited protection for containers"
+  - **Out-of-Band**: "WAAS rules are designed to let you tailor the best-suited out-of-band protection for containers"
+
+#### Critical Difference - Protection Mode Selection:
+**Out-of-Band Mode** (Monitoring Only):
+- ✅ Basic configuration (scope, auto-detection)
+- ✅ API endpoint discovery
+- ✅ Port detection
+- ❌ **No protection rules available**
+- ❌ **No attack blocking**
+- ❌ **No OWASP Top 10 protection**
+
+**In-Line Mode** (Active Protection):
+- ✅ Basic configuration (scope, auto-detection)
+- ✅ API endpoint discovery
+- ✅ Port detection
+- ✅ **Full protection rules available**
+- ✅ **OWASP Top 10 protection**
+- ✅ **Attack signature blocking**
+- ✅ **Custom rule creation**
+- ✅ **Rate limiting**
+- ✅ **File upload protection**
 
 #### Rule Management Interface:
 - **Filter Bar**: "Filter app firewall rules by keywords and attributes"
@@ -194,6 +300,112 @@ The WAAS section provides comprehensive web application and API security managem
 - **Empty Rule Set**: "There is no data to show" - No WAAS rules currently configured
 - **Ready for Configuration**: Interface ready for rule creation and management
 - **Comprehensive Coverage**: Support for all deployment models (container, host, serverless, etc.)
+
+### WAAS Protection Workflow
+
+**Based on "Unprotected web apps" monitoring view**:
+
+#### Step 1: Identify Unprotected Applications
+**Monitor → WAAS → Unprotected web apps → Containers**
+- **Current Detection**: `twistlock/private:console_34_00_141`
+- **Container Count**: 1 container running
+- **Listening Ports**: HTTPS port 8083
+- **Status**: Not protected by WAAS
+
+#### Step 2: Create WAAS Protection Rule
+**Navigate to Defend → WAAS → Container → + Add rule**
+
+**Rule Configuration**:
+- **Rule Name**: "Console WAAS Protection"
+- **Description**: "Protect twistlock console web application"
+- **Scope**: Select collection containing the console container
+- **Protection Mode**: 
+  - **In-Line**: Real-time blocking (production)
+  - **Out-of-Band**: Monitoring only (testing)
+
+#### Step 3: Configure Web Application Protection
+**Protection Settings**:
+- **Port Configuration**: Target HTTPS port 8083
+- **Attack Protection**: Enable OWASP Top 10 protection
+- **Custom Rules**: Add application-specific rules if needed
+- **Exception Handling**: Configure legitimate traffic exceptions
+
+#### Step 4: Deploy and Verify
+**Deployment Process**:
+1. **Save Rule**: Deploy the WAAS policy
+2. **Wait for Propagation**: Allow 2-5 minutes for policy deployment
+3. **Verify Protection**: Return to Monitor → WAAS → Unprotected web apps
+4. **Refresh List**: Click "Refresh" to update the unprotected apps list
+5. **Confirm Protection**: Protected apps no longer appear in the list
+
+#### Step 5: Monitor WAAS Protection
+**Monitor → WAAS → WAAS Explorer**:
+- **View Protected Applications**: See all applications under WAAS protection
+- **Monitor Events**: Track blocked attacks and security events
+- **Performance Metrics**: Monitor impact on application performance
+- **Policy Effectiveness**: Analyze protection coverage and effectiveness
+
+### WAAS Protection Troubleshooting
+
+**Common Issues When Apps Remain Unprotected:**
+
+#### Issue 1: Incorrect Collection Scope
+**Problem**: Rule created but wrong collection selected
+**Solution**:
+- **Check Container Location**: Verify which collection contains your application
+- **For Console Apps**: Often in "Prisma Cloud resources" collection (scope: `Images: *twistlock*`)
+- **Update Rule Scope**: Edit WAAS rule to target correct collection
+- **Verify Collection Scope**: Ensure collection includes your specific container/image
+
+#### Issue 2: Incomplete Rule Configuration
+**Problem**: Basic rule created but protection rules not configured
+**Solution**:
+- **Complete Protection Setup**: Add specific attack protection rules after basic setup
+- **Configure Protection Mode**: Set In-Line (blocking) or Out-of-Band (monitoring)
+- **Enable Attack Protections**: Activate OWASP Top 10, SQL injection, XSS protection
+- **Port Configuration**: Ensure correct ports are detected and protected
+
+**Critical Missing Step - Adding Protection Rules:**
+1. **Edit Your WAAS Rule**: Click on your "Twistlock" rule to edit it
+2. **Add Protection Rules**: Look for sections like:
+   - **OWASP Top 10 Protection**: Enable SQL injection, XSS, CSRF protection
+   - **Custom Rules**: Add specific attack patterns to block
+   - **Rate Limiting**: Configure request rate limits
+   - **File Upload Protection**: Block malicious file uploads
+3. **Set Protection Mode**: Ensure it's set to "In-Line" (blocking) not just "Out-of-Band" (monitoring)
+4. **Save and Deploy**: The rule must have actual protection rules to be effective
+
+#### Issue 3: Rule Not Deployed/Activated
+**Problem**: Rule created but not properly deployed
+**Solution**:
+- **Check Rule Status**: Verify rule is active and deployed
+- **Wait for Propagation**: Allow 5-10 minutes for policy deployment
+- **Restart Defender**: Restart defender agents if necessary
+- **Check Defender Connectivity**: Ensure defenders can communicate with console
+
+#### Issue 4: Application Not Detected as Web App
+**Problem**: Application not recognized as web application requiring protection
+**Solution**:
+- **Enable Auto-Detection**: Ensure "Automatically detect ports" is enabled
+- **Manual Port Configuration**: Manually specify listening ports (e.g., 8083)
+- **Web App Classification**: Verify application is classified as web application
+- **Check Network Traffic**: Ensure application is receiving HTTP/HTTPS traffic
+
+#### Issue 5: Collection Wildcard Error
+**Problem**: "Invalid collection [name] - images resource must not be a wildcard"
+**Solution**:
+- **Fix Collection Scope**: Change from wildcard to specific image names
+- **Example Fix**: 
+  - ❌ **Invalid**: `Images: *twistlock*` (wildcard)
+  - ✅ **Valid**: `Images: twistlock/private:console_34_00_141` (specific)
+- **Alternative**: Use existing "Prisma Cloud resources" collection
+- **Create New Collection**: Make collection with specific image scope
+
+#### Verification Steps:
+1. **Check WAAS Explorer**: Look for your application in protected apps list
+2. **Monitor Events**: Check for WAAS-related events and alerts
+3. **Test Protection**: Send test attacks to verify protection is working
+4. **Review Logs**: Check defender and console logs for WAAS activity
 
 #### 5. CNNS (Cloud Native Network Security)
 **Purpose**: Network security for cloud-native environments
@@ -278,10 +490,19 @@ The WAAS section provides comprehensive web application and API security managem
 
 #### 5. WAAS (Web Application and API Security)
 **Purpose**: Monitor web application and API security posture
+
+**WAAS Monitoring Tabs**:
+- **WAAS Explorer**: View and analyze protected web applications and their security events
+- **API Discovery**: Automatically discover APIs in your environment and their usage patterns
+- **API Definition Scan**: Scan API definitions for security vulnerabilities and misconfigurations
+- **Unprotected web apps**: Identify web applications that are not currently protected by WAAS
+
+**Key Monitoring Capabilities**:
 - **Application Security Monitoring**: Track application-level security events
 - **API Security**: Monitor API usage and potential security issues
 - **Web Application Firewall**: Monitor WAF rules and blocked requests
 - **Application Performance**: Track security controls' impact on application performance
+- **Protection Coverage**: Identify gaps in WAAS protection coverage
 
 #### 6. ATT&CK (MITRE ATT&CK Framework)
 **Purpose**: Map security events to MITRE ATT&CK framework for threat intelligence
@@ -505,6 +726,63 @@ Monitor finds violation → Manage creates ticket → Radars shows updated statu
 - **Authentication**: Multi-factor authentication support
 - **Authorization**: Role-based access control
 - **Audit Logging**: Comprehensive audit trail of all activities
+
+### System Requirements
+
+**Based on [official Prisma Cloud documentation](https://docs.prismacloud.io/en/compute-edition/34/admin-guide/install/system-requirements#hardware):**
+
+#### Hardware Requirements
+
+**CPU Requirements by Scale:**
+| Defender Count | CPU Cores |
+|----------------|-----------|
+| < 1,000 Defenders | 4 cores |
+| 1,001 - 10,000 Defenders | 8 cores |
+| > 10,000 Defenders | > 8 cores |
+
+**RAM Requirements by Feature Set:**
+| Configuration | RAM Requirement |
+|---------------|-----------------|
+| Minimum Without Registry Scanning | 512MB |
+| Minimum With Registry Scanning | 2 GB |
+| Minimum with WAAS Out-of-Band | 4 GB |
+| < 1,000 Defenders | 8 GB |
+| 1,001 - 10,000 Defenders | 30 GB |
+| > 10,000 Defenders | > 30 GB |
+
+**Storage Requirements by Scale:**
+| Defender Count | Storage Requirement |
+|----------------|---------------------|
+| < 1,000 Defenders | 100 GB |
+| 1,001 - 10,000 Defenders | 500 GB |
+| > 10,000 Defenders | > 500 GB |
+
+**Registry Scanning Storage Formula:**
+- **Storage per image scanned**: 1.5 × (size of largest image) × (number of executors)
+- **Additional Storage**: 20GB minimum for registry scanning functionality
+
+**Additional Hardware Considerations:**
+- **Network**: Stable high-bandwidth connection to cloud providers and registries
+- **Disk I/O**: High-performance SSD for scanning and database operations
+- **Memory**: Additional RAM required for concurrent scanning operations
+
+#### Software Requirements
+- **Operating System**: Linux (Ubuntu 18.04+, CentOS 7+, RHEL 7+)
+- **Container Runtime**: Docker 19.03+ or containerd 1.3+
+- **Kubernetes**: v1.19+ (if using Kubernetes deployment)
+- **Network Access**: HTTPS access to cloud providers and container registries
+
+#### Network Requirements
+- **Internet Connectivity**: Stable connection to Prisma Cloud services
+- **Cloud Provider APIs**: Access to AWS, Azure, Google Cloud APIs
+- **Registry Access**: Connectivity to container registries (Docker Hub, ECR, ACR, GCR)
+- **Bandwidth**: Adequate bandwidth for image scanning and data transfer
+
+#### Defender Agent Requirements
+- **Resource Usage**: 50-200MB RAM, 1-2 CPU cores per agent
+- **Network**: HTTPS outbound to Prisma Cloud Console
+- **Storage**: Minimal local storage for logs and cache
+- **Permissions**: Cloud provider IAM roles and policies
 
 ---
 
