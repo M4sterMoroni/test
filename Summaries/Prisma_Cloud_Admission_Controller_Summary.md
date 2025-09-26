@@ -40,58 +40,6 @@ sequenceDiagram
 
 ## Component Architecture
 
-```mermaid
-graph TB
-    subgraph "Kubernetes Cluster"
-        subgraph "Control Plane"
-            API[Kubernetes API Server]
-            Webhook[Prisma Cloud<br/>Admission Controller]
-        end
-        
-        subgraph "Worker Nodes"
-            Pod1[Application Pod 1]
-            Pod2[Application Pod 2]
-            PodN[Application Pod N]
-        end
-        
-        subgraph "Admission Controller Namespace"
-            AC[Admission Controller<br/>Deployment]
-            Service[Admission Controller<br/>Service]
-            Config[Webhook<br/>Configuration]
-        end
-    end
-    
-    subgraph "Prisma Cloud Compute Edition"
-        Console[Prisma Cloud Console]
-        Policies[Security Policies]
-        Scanner[Image Scanner]
-        DB[(Policy Database)]
-    end
-    
-    subgraph "External"
-        Registry[Container Registry<br/>(Docker Hub, ECR, etc.)]
-    end
-    
-    API --> Webhook
-    Webhook --> Console
-    Console --> Policies
-    Console --> Scanner
-    Scanner --> Registry
-    Policies --> DB
-    
-    Webhook --> AC
-    AC --> Service
-    Service --> Config
-    
-    API --> Pod1
-    API --> Pod2
-    API --> PodN
-    
-    style Webhook fill:#e1f5fe
-    style Console fill:#f3e5f5
-    style Registry fill:#fff3e0
-```
-
 ## Request Flow - What Happens When a User Sends a Request
 
 ```mermaid
@@ -139,65 +87,6 @@ flowchart TD
     style AA fill:#d4edda
 ```
 
-## Detailed Request Processing Steps
-
-```mermaid
-sequenceDiagram
-    participant User as 👤 User
-    participant Kubectl as 🔧 kubectl
-    participant API as 🎯 API Server
-    participant Auth as 🔐 Authentication
-    participant Authz as 🛡️ Authorization
-    participant Mutate as 🔄 Mutating Webhook
-    participant Validate as ✅ Validating Webhook
-    participant Console as ☁️ Prisma Cloud Console
-    participant Scanner as 🔍 Image Scanner
-    participant Registry as 📦 Container Registry
-    participant Cluster as 🏗️ Kubernetes Cluster
-
-    User->>Kubectl: kubectl apply -f app.yaml
-    Kubectl->>API: POST /api/v1/namespaces/default/deployments
-    
-    Note over API: Step 1: Authentication
-    API->>Auth: Validate credentials
-    Auth-->>API: ✅ Authenticated
-    
-    Note over API: Step 2: Authorization
-    API->>Authz: Check permissions
-    Authz-->>API: ✅ Authorized
-    
-    Note over API: Step 3: Mutating Webhooks
-    API->>Mutate: Send deployment spec
-    Note over Mutate: Add security labels<br/>Add annotations<br/>Modify spec
-    Mutate-->>API: Modified deployment spec
-    
-    Note over API: Step 4: Validating Webhooks
-    API->>Validate: Send modified spec
-    Note over Validate: Extract container images<br/>Check policies
-    
-    Validate->>Console: Query image policies
-    Console->>Scanner: Scan image for vulnerabilities
-    Scanner->>Registry: Pull image metadata
-    Registry-->>Scanner: Image details
-    Scanner-->>Console: Vulnerability report
-    
-    Console->>Console: Evaluate policies
-    Note over Console: Check severity thresholds<br/>Compliance rules<br/>Runtime policies
-    
-    alt Policy Violation
-        Console-->>Validate: ❌ REJECT
-        Validate-->>API: 403 Forbidden
-        API-->>Kubectl: Error response
-        Kubectl-->>User: ❌ Deployment failed
-    else Policy Compliant
-        Console-->>Validate: ✅ ALLOW
-        Validate-->>API: 200 OK
-        API->>Cluster: Create deployment
-        Cluster-->>API: Deployment created
-        API-->>Kubectl: Success response
-        Kubectl-->>User: ✅ Deployment successful
-    end
-```
 
 ## What is an Admission Controller?
 
