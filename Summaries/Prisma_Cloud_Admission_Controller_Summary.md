@@ -88,6 +88,55 @@ flowchart TD
 ```
 
 
+## Open Policy Agent (OPA) Integration
+
+The Prisma Cloud Admission Controller leverages **Open Policy Agent (OPA)** as a policy engine for making admission decisions. OPA provides a unified framework for policy enforcement across different systems and platforms.
+
+### OPA in Prisma Cloud Admission Controller
+
+Based on the [Prisma Cloud Compute Edition documentation](https://docs.prismacloud.io/en/compute-edition/34/admin-guide/access-control/open-policy-agent), OPA integration provides:
+
+#### Key Features:
+- **Policy as Code**: Define security policies using Rego language
+- **Unified Policy Engine**: Consistent policy evaluation across Prisma Cloud
+- **Flexible Rule Engine**: Support for complex policy logic and conditions
+- **Integration with Prisma Cloud**: Seamless integration with Prisma Cloud console
+
+#### How OPA Works in Admission Controller:
+1. **Policy Definition**: Policies are defined in Rego language and stored in Prisma Cloud
+2. **Policy Evaluation**: OPA evaluates incoming requests against defined policies
+3. **Decision Making**: OPA returns allow/deny decisions based on policy compliance
+4. **Policy Updates**: Policies can be updated dynamically without restarting the controller
+
+#### OPA Policy Examples:
+```rego
+# Example: Block images with high severity vulnerabilities
+package prisma.admission
+
+import rego.v1
+
+deny[msg] {
+    input.kind == "Pod"
+    some container in input.spec.containers
+    container.image == "nginx:1.14"  # Known vulnerable version
+    msg := "Image nginx:1.14 has critical vulnerabilities"
+}
+
+# Example: Enforce resource limits
+deny[msg] {
+    input.kind == "Pod"
+    some container in input.spec.containers
+    not container.resources.limits.memory
+    msg := "Container must have memory limits defined"
+}
+```
+
+#### OPA Integration Benefits:
+- **Declarative Policies**: Define what should be allowed/denied, not how to implement it
+- **Policy Testing**: Test policies independently of the admission controller
+- **Policy Reuse**: Share policies across different Prisma Cloud components
+- **Audit Trail**: Complete audit trail of policy decisions and reasoning
+
 ## What is an Admission Controller?
 
 Based on the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/), admission controllers are plugins that govern and enforce how the API is used. They can be validating, mutating, or both, and they intercept requests to the Kubernetes API server before the object is persisted but after the request is authenticated and authorized.
