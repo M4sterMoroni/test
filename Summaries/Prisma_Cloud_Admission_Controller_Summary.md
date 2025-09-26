@@ -137,6 +137,52 @@ deny[msg] {
 - **Policy Reuse**: Share policies across different Prisma Cloud components
 - **Audit Trail**: Complete audit trail of policy decisions and reasoning
 
+### OPA Policies vs. Prisma Cloud Policies
+
+**Important Distinction**: OPA policies in the Admission Controller are **different** from the standard Prisma Cloud policies used for runtime protection, vulnerability management, and compliance.
+
+#### Standard Prisma Cloud Policies:
+- **Vulnerability Policies**: Scan images for CVEs and security issues
+- **Compliance Policies**: Enforce regulatory standards (PCI DSS, HIPAA, etc.)
+- **Runtime Policies**: Monitor and protect running containers
+- **Network Policies**: Control network traffic and communication
+- **Host Policies**: Protect host systems and infrastructure
+
+#### OPA Admission Controller Policies:
+- **Admission-Specific**: Only apply during resource creation/update
+- **Pre-Deployment**: Evaluate workloads before they run
+- **Custom Logic**: Use Rego language for complex decision-making
+- **Kubernetes-Focused**: Specifically designed for Kubernetes admission control
+
+#### Key Differences:
+
+| Aspect | Standard Prisma Cloud Policies | OPA Admission Controller Policies |
+|--------|-------------------------------|-----------------------------------|
+| **Scope** | Runtime, vulnerability, compliance | Pre-deployment admission only |
+| **Language** | Prisma Cloud policy language | Rego (Open Policy Agent) |
+| **Timing** | Continuous monitoring | One-time evaluation at deployment |
+| **Purpose** | Ongoing security enforcement | Preventive security gatekeeping |
+| **Integration** | Prisma Cloud console | Kubernetes admission webhooks |
+
+#### Policy Relationship:
+- **Complementary**: OPA policies work alongside standard Prisma Cloud policies
+- **Different Layers**: OPA = prevention, Standard policies = ongoing protection
+- **Shared Data**: Both can reference the same vulnerability scans and compliance data
+- **Unified Management**: Both managed through Prisma Cloud console (different sections)
+
+### OPA Scope in Prisma Cloud
+
+Based on the [Prisma Cloud Compute Edition documentation](https://docs.prismacloud.io/en/compute-edition/34/admin-guide/access-control/open-policy-agent), **OPA is specifically used for the Admission Controller feature** in Prisma Cloud. The documentation does not indicate that OPA is used in other Prisma Cloud components such as:
+
+- Runtime Security
+- Compliance Management  
+- Infrastructure as Code (IaC)
+- API Security
+- Data Security
+
+**Important Note**: OPA's role in Prisma Cloud appears to be focused specifically on admission control for Kubernetes environments, not as a unified policy engine across all Prisma Cloud features.
+
+
 ## What is an Admission Controller?
 
 Based on the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/), admission controllers are plugins that govern and enforce how the API is used. They can be validating, mutating, or both, and they intercept requests to the Kubernetes API server before the object is persisted but after the request is authenticated and authorized.
