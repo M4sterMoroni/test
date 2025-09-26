@@ -4,6 +4,201 @@
 
 The Prisma Cloud Admission Controller is a Kubernetes admission controller that provides security policy enforcement at the cluster level. It integrates with Prisma Cloud Compute Edition to enforce security policies before workloads are deployed to the cluster, preventing vulnerable or non-compliant containers from running.
 
+## How It Works - Architecture Flow
+
+```mermaid
+sequenceDiagram
+    participant User as Developer/User
+    participant API as Kubernetes API Server
+    participant Webhook as Prisma Cloud<br/>Admission Controller
+    participant Console as Prisma Cloud<br/>Compute Console
+    participant Registry as Container Registry
+    participant Cluster as Kubernetes Cluster
+
+    User->>API: kubectl apply -f deployment.yaml
+    Note over API: Request authenticated & authorized
+    
+    API->>Webhook: Forward to Validating Webhook
+    Note over Webhook: Extract container images
+    
+    Webhook->>Console: Check image against policies
+    Console->>Registry: Scan image for vulnerabilities
+    Registry-->>Console: Return scan results
+    Console-->>Webhook: Policy decision (Allow/Deny)
+    
+    alt Policy Violation Detected
+        Webhook-->>API: REJECT request
+        API-->>User: Error: Policy violation
+        Note over User: Deployment blocked
+    else Policy Compliant
+        Webhook-->>API: ALLOW request
+        API->>Cluster: Create/Update resources
+        Cluster-->>User: Deployment successful
+        Note over User: Secure workload deployed
+    end
+```
+
+## Component Architecture
+
+```mermaid
+graph TB
+    subgraph "Kubernetes Cluster"
+        subgraph "Control Plane"
+            API[Kubernetes API Server]
+            Webhook[Prisma Cloud<br/>Admission Controller]
+        end
+        
+        subgraph "Worker Nodes"
+            Pod1[Application Pod 1]
+            Pod2[Application Pod 2]
+            PodN[Application Pod N]
+        end
+        
+        subgraph "Admission Controller Namespace"
+            AC[Admission Controller<br/>Deployment]
+            Service[Admission Controller<br/>Service]
+            Config[Webhook<br/>Configuration]
+        end
+    end
+    
+    subgraph "Prisma Cloud Compute Edition"
+        Console[Prisma Cloud Console]
+        Policies[Security Policies]
+        Scanner[Image Scanner]
+        DB[(Policy Database)]
+    end
+    
+    subgraph "External"
+        Registry[Container Registry<br/>(Docker Hub, ECR, etc.)]
+    end
+    
+    API --> Webhook
+    Webhook --> Console
+    Console --> Policies
+    Console --> Scanner
+    Scanner --> Registry
+    Policies --> DB
+    
+    Webhook --> AC
+    AC --> Service
+    Service --> Config
+    
+    API --> Pod1
+    API --> Pod2
+    API --> PodN
+    
+    style Webhook fill:#e1f5fe
+    style Console fill:#f3e5f5
+    style Registry fill:#fff3e0
+```
+
+## Request Flow - What Happens When a User Sends a Request
+
+```mermaid
+flowchart TD
+    A[User: kubectl apply deployment.yaml] --> B[Kubernetes API Server]
+    B --> C{Request Authenticated?}
+    C -->|No| D[Return 401 Unauthorized]
+    C -->|Yes| E{Request Authorized?}
+    E -->|No| F[Return 403 Forbidden]
+    E -->|Yes| G[Extract Pod/Deployment Spec]
+    
+    G --> H[Check for Mutating Webhooks]
+    H --> I[Prisma Cloud Mutating Webhook]
+    I --> J[Add Security Labels/Annotations]
+    J --> K[Return Modified Spec]
+    
+    K --> L[Check for Validating Webhooks]
+    L --> M[Prisma Cloud Validating Webhook]
+    M --> N[Extract Container Images]
+    
+    N --> O[Query Prisma Cloud Console]
+    O --> P[Check Image Against Policies]
+    P --> Q[Scan for Vulnerabilities]
+    Q --> R[Check Compliance Rules]
+    R --> S[Evaluate Runtime Policies]
+    
+    S --> T{Policy Decision}
+    T -->|VIOLATION| U[Generate Rejection Response]
+    T -->|COMPLIANT| V[Generate Approval Response]
+    
+    U --> W[Return 403 Forbidden to API Server]
+    V --> X[Return 200 OK to API Server]
+    
+    W --> Y[API Server Returns Error to User]
+    X --> Z[API Server Creates Resources]
+    
+    Z --> AA[Deployment Created Successfully]
+    Y --> BB[Deployment Blocked]
+    
+    style A fill:#e8f5e8
+    style T fill:#fff3cd
+    style U fill:#f8d7da
+    style V fill:#d4edda
+    style BB fill:#f8d7da
+    style AA fill:#d4edda
+```
+
+## Detailed Request Processing Steps
+
+```mermaid
+sequenceDiagram
+    participant User as 👤 User
+    participant Kubectl as 🔧 kubectl
+    participant API as 🎯 API Server
+    participant Auth as 🔐 Authentication
+    participant Authz as 🛡️ Authorization
+    participant Mutate as 🔄 Mutating Webhook
+    participant Validate as ✅ Validating Webhook
+    participant Console as ☁️ Prisma Cloud Console
+    participant Scanner as 🔍 Image Scanner
+    participant Registry as 📦 Container Registry
+    participant Cluster as 🏗️ Kubernetes Cluster
+
+    User->>Kubectl: kubectl apply -f app.yaml
+    Kubectl->>API: POST /api/v1/namespaces/default/deployments
+    
+    Note over API: Step 1: Authentication
+    API->>Auth: Validate credentials
+    Auth-->>API: ✅ Authenticated
+    
+    Note over API: Step 2: Authorization
+    API->>Authz: Check permissions
+    Authz-->>API: ✅ Authorized
+    
+    Note over API: Step 3: Mutating Webhooks
+    API->>Mutate: Send deployment spec
+    Note over Mutate: Add security labels<br/>Add annotations<br/>Modify spec
+    Mutate-->>API: Modified deployment spec
+    
+    Note over API: Step 4: Validating Webhooks
+    API->>Validate: Send modified spec
+    Note over Validate: Extract container images<br/>Check policies
+    
+    Validate->>Console: Query image policies
+    Console->>Scanner: Scan image for vulnerabilities
+    Scanner->>Registry: Pull image metadata
+    Registry-->>Scanner: Image details
+    Scanner-->>Console: Vulnerability report
+    
+    Console->>Console: Evaluate policies
+    Note over Console: Check severity thresholds<br/>Compliance rules<br/>Runtime policies
+    
+    alt Policy Violation
+        Console-->>Validate: ❌ REJECT
+        Validate-->>API: 403 Forbidden
+        API-->>Kubectl: Error response
+        Kubectl-->>User: ❌ Deployment failed
+    else Policy Compliant
+        Console-->>Validate: ✅ ALLOW
+        Validate-->>API: 200 OK
+        API->>Cluster: Create deployment
+        Cluster-->>API: Deployment created
+        API-->>Kubectl: Success response
+        Kubectl-->>User: ✅ Deployment successful
+    end
+```
+
 ## What is an Admission Controller?
 
 Based on the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/), admission controllers are plugins that govern and enforce how the API is used. They can be validating, mutating, or both, and they intercept requests to the Kubernetes API server before the object is persisted but after the request is authenticated and authorized.
