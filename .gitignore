@@ -1,0 +1,36 @@
+# Interview Preparation Files
+Palo_Alto_Interview_Preparation.md
+Prisma_Cloud_Client_Scenarios.md
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+
+# Credentials
+**/creds.json
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+resume
+
