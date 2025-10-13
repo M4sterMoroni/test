@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vulnerable-app
+  namespace: default
+  labels:
+    app: vulnerable
+    test: high-severity
+spec:
+  containers:
+  - name: app
+    image: wordpress:4.6  # Known vulnerable version
+    ports:
+    - containerPort: 80
+

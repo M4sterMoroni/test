@@ -1,0 +1,184 @@
+# Prisma Cloud Admission Controller Configuration
+# This is a working configuration based on Prisma Cloud patterns
+# Generated for lab purposes
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: twistlock-cfg
+  namespace: twistlock
+data:
+  console: "https://host.minikube.internal:8083"
+  namespace: "twistlock"
+  admission-controller: "true"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: twistlock-secret
+  namespace: twistlock
+type: Opaque
+data:
+  username: YWRtaW4=  # base64 encoded 'admin'
+  password: YWRtaW4yMzQ=  # base64 encoded 'admin234'
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twistlock-admission-controller
+  namespace: twistlock
+  labels:
+    app: twistlock-defender
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: twistlock-defender
+  template:
+    metadata:
+      labels:
+        app: twistlock-defender
+    spec:
+      serviceAccountName: twistlock-service
+      containers:
+      - name: twistlock-defender
+        image: twistlock/defender:latest
+        imagePullPolicy: Always
+        env:
+        - name: TWISTLOCK_CONSOLE
+          valueFrom:
+            configMapKeyRef:
+              name: twistlock-cfg
+              key: console
+        - name: TWISTLOCK_NAMESPACE
+          valueFrom:
+            configMapKeyRef:
+              name: twistlock-cfg
+              key: namespace
+        - name: TWISTLOCK_ADMISSION_CONTROLLER
+          valueFrom:
+            configMapKeyRef:
+              name: twistlock-cfg
+              key: admission-controller
+        - name: TWISTLOCK_USER
+          valueFrom:
+            secretKeyRef:
+              name: twistlock-secret
+              key: username
+        - name: TWISTLOCK_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: twistlock-secret
+              key: password
+        ports:
+        - containerPort: 8083
+          name: https
+        - containerPort: 8084
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /api/v1/status
+            port: 8083
+            scheme: HTTPS
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/status
+            port: 8083
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twistlock-admission-controller
+  namespace: twistlock
+  labels:
+    app: twistlock-defender
+spec:
+  ports:
+  - port: 443
+    targetPort: 8083
+    protocol: TCP
+    name: https
+  - port: 80
+    targetPort: 8084
+    protocol: TCP
+    name: http
+  selector:
+    app: twistlock-defender
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: twistlock-validating-webhook
+webhooks:
+- name: twistlock-validating-webhook.twistlock.svc
+  clientConfig:
+    service:
+      name: twistlock-admission-controller
+      namespace: twistlock
+      path: "/api/v1/validate"
+    caBundle: ""  # In production, this would contain the CA certificate
+  rules:
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: ["apps"]
+    apiVersions: ["v1"]
+    resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  failurePolicy: Fail
+  sideEffects: None
+  admissionReviewVersions: ["v1", "v1beta1"]
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: twistlock-mutating-webhook
+webhooks:
+- name: twistlock-mutating-webhook.twistlock.svc
+  clientConfig:
+    service:
+      name: twistlock-admission-controller
+      namespace: twistlock
+      path: "/api/v1/mutate"
+    caBundle: ""  # In production, this would contain the CA certificate
+  rules:
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: ["apps"]
+    apiVersions: ["v1"]
+    resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  failurePolicy: Fail
+  sideEffects: None
+  admissionReviewVersions: ["v1", "v1beta1"]

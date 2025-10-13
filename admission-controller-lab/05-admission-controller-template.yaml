@@ -1,0 +1,24 @@
+# This is a template - you need to get the actual configuration from Prisma Cloud Console
+# Follow these steps:
+#
+# 1. Open browser: https://localhost:8083
+# 2. Login: admin / admin234  
+# 3. Navigate to: Manage → Defenders → Deploy
+# 4. Click: Deploy
+# 5. Choose: Orchestrator: Kubernetes
+# 6. Choose: Defender type: Admission Controller
+# 7. Set Console address: https://host.minikube.internal:8083
+# 8. Copy the YAML output
+# 9. Replace this file with the copied content
+# 10. Rename to: 05-admission-controller.yaml
+#
+# OR use the Prisma Cloud Console UI to download directly
+
+# The admission controller configuration includes:
+# - ConfigMap with Prisma Cloud Console details
+# - Secret for authentication
+# - Deployment for the admission controller
+# - Service for webhook communication
+# - ValidatingWebhookConfiguration
+# - MutatingWebhookConfiguration (optional)
+
